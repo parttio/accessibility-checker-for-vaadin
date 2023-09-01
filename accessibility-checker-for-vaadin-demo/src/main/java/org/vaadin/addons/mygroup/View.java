@@ -10,10 +10,6 @@ public class View extends VerticalLayout {
 
     public View() {
         TextField axaInputText = new TextField();
-        //<accessibility-plugin-label>
-        axaInputText.setLabel("test 898");
-        //<accessibility-plugin-aria-label>
-        axaInputText.setAriaLabel("aria-label-test");
         add(axaInputText);
     }
 }
