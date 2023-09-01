@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?><project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>org.vaadin.addons.jchristophe</groupId>
+    <artifactId>accessibility-checker-for-vaadin-root</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+    <modules>
+        <module>accessibility-checker-for-vaadin</module>
+        <module>accessibility-checker-for-vaadin-demo</module>
+    </modules>
+    <name>accessibility-checker-for-vaadin</name>
+    <description>accessibility-checker-for-vaadin</description>
+    
+    <properties>
+        <vaadin.version>24.2.0.alpha9</vaadin.version>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <!-- Vaadin add-on metadata -->
+        <vaadin.addon.owner>Add-on Author Name</vaadin.addon.owner>
+        <vaadin.addon.license>Apache License 2.0</vaadin.addon.license>
+        <vaadin.addon.name>${project.name}</vaadin.addon.name>
+        <vaadin.addon.jar>${project.build.finalName}.${project.packaging}</vaadin.addon.jar>
+        <vaadin.addon.version>${project.version}</vaadin.addon.version>
+    </properties>
+    <organization>
+        <!-- Name of the add-on author and URL.
+        Update these to match your own name and website. -->
+        <name>Add-on Author Name</name>
+        <url>https://vaadin.com/directory</url>
+    </organization>
+    <licenses>
+        <license>
+            <!-- The license of this add-on.
+            We recommend to use the same Apache 2 open source license like Vaadin itself. -->
+            <name>Apache 2</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>accessibility-checker-for-vaadin</artifactId>
+                <version>${accessibility-checker-for-vaadin.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.vaadin</groupId>
+                <artifactId>vaadin-bom</artifactId>
+                <type>pom</type>
+                <scope>import</scope>
+                <version>${vaadin.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+    <repositories>
+        <repository>
+            <id>Vaadin Directory</id>
+            <url>https://maven.vaadin.com/vaadin-addons</url>
+        </repository>
+        <!-- Repository needed for prerelease versions of Vaadin -->
+        <repository>
+            <id>Vaadin prereleases</id>
+            <url>https://maven.vaadin.com/vaadin-prereleases</url>
+        </repository>
+        <!-- Repository needed for the snapshot versions of Vaadin -->
+        <repository>
+            <id>vaadin-snapshots</id>
+            <url>https://oss.sonatype.org/content/repositories/vaadin-snapshots/</url>
+        </repository>
+    </repositories>
+
+    <pluginRepositories>
+        <!-- Repository needed for prerelease versions of Vaadin -->
+        <pluginRepository>
+            <id>Vaadin prereleases</id>
+            <url>https://maven.vaadin.com/vaadin-prereleases</url>
+        </pluginRepository>
+        <pluginRepository>
+            <id>vaadin-snapshots</id>
+            <url>https://oss.sonatype.org/content/repositories/vaadin-snapshots/</url>
+            <releases><enabled>false</enabled></releases>
+        </pluginRepository>
+    </pluginRepositories>
+</project>
