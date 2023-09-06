@@ -216,7 +216,6 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         const componentList = getComponents(element!);
         const component = componentList[componentList.length - 1];
         const serializableComponentRef: ComponentReference = { nodeId: component.nodeId, uiId: component.uiId };
-        //this.frontendConnection!.sendShowComponentCreateLocation(serializableComponentRef);
         devTools.send(AccessibilityChecker.NAME +'-show-component-creation-location', serializableComponentRef);
     }
 
@@ -501,7 +500,6 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         </div>
         `;
     }
-
 
     _labelUpdated(e: Event) {
         this.labeltext = (e.target as HTMLInputElement).value;
