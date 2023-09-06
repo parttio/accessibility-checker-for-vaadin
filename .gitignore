@@ -36,4 +36,4 @@ package.json
 webpack.config.js
 webpack.generated.js
 
-explorer-tree-grid-flow/src/main/resources/rebel.xml
+/accessibility-checker-for-vaadin-demo/frontend/generated/
