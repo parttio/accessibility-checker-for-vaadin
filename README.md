@@ -32,6 +32,14 @@ If you change the Java code and run "Recompile"it will be taken into account aft
 
 For the typescript changes, the folder in the addon library is already listened.
 
+## Publishing to Vaadin Directory
+
+With commit rights to the repository, issue:
+
+    mvn release:prepare release:clean
+
+Configured GH action will build a release and push to Maven Central.
+
 ## Licence
 
 Apache 2.0
