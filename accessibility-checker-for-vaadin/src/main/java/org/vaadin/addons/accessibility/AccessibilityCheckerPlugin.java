@@ -43,7 +43,6 @@ import java.util.Optional;
 @NpmPackage(value = "accessibility-checker", version = "3.1.49")
 @NpmPackage(value = "accessibility-checker-engine", version = "3.1.49")
 @JsModule(value = "./accessibility-checker/accessibility-checker.ts", developmentOnly = true)
-@JavaScript(value = "https://unpkg.com/accessibility-checker-engine@latest/ace.js", developmentOnly = true)
 public class AccessibilityCheckerPlugin implements DevToolsMessageHandler {
 
     public static final String ACCESSIBILITY_CHECKER = "accessibility-checker";
