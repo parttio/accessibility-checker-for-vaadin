@@ -28,6 +28,7 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.dependency.JavaScript;
 import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.component.dependency.NpmPackage;
+import com.vaadin.flow.component.internal.ComponentTracker;
 import com.vaadin.flow.dom.Element;
 import com.vaadin.flow.server.VaadinService;
 import com.vaadin.flow.server.VaadinSession;
@@ -92,6 +93,12 @@ public class AccessibilityCheckerPlugin implements DevToolsMessageHandler {
             int uiId = (int) data.getNumber("uiId");
             String label = data.getString("label");
             getAccessibilityJavaSourceModifier().setAriaLabel(uiId, nodeId, label);
+            return true;
+        } else if (command.equals(ACCESSIBILITY_CHECKER + "-update-page-title")) {
+
+            int uiId = (int) data.getNumber("uiId");
+            String label = data.getString("label");
+            getAccessibilityJavaSourceModifier().setPageTitle(uiId, label);
             return true;
         }
         return false;

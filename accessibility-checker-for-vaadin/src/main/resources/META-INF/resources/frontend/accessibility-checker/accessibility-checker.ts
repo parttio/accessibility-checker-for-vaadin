@@ -277,29 +277,6 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
             element.classList.remove('vaadin-accessibility-checker-highlight');
         }
     }
-    setLabel(node:Node) {
-        const element = node.parentElement;
-        // set the label on the client side
-        (element as any).label = this.labeltext;
-        // set the label on the server side
-        const componentList = getComponents(element!);
-        const component = componentList[componentList.length - 1];
-        const serializableComponentRef: ComponentReference = { nodeId: component.nodeId, uiId: component.uiId };
-        //this.frontendConnection!.sendShowComponentCreateLocation(serializableComponentRef);
-        devTools.send(`${AccessibilityChecker.NAME}-set-label`, { nodeId: component.nodeId, uiId: component.uiId, label: this.labeltext });
-    }
-
-    setAriaLabel(node:Node) {
-        const element = node.parentElement;
-        (element as any).accessibleName = this.labeltext;
-
-        // set the label on the server side
-        const componentList = getComponents(element!);
-        const component = componentList[componentList.length - 1];
-        const serializableComponentRef: ComponentReference = { nodeId: component.nodeId, uiId: component.uiId };
-        //this.frontendConnection!.sendShowComponentCreateLocation(serializableComponentRef);
-        devTools.send(`${AccessibilityChecker.NAME}-set-aria-label`, { nodeId: component.nodeId, uiId: component.uiId, label: this.labeltext });
-    }
 
     activate() {
         this.report = undefined;
@@ -395,21 +372,36 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
      * That might need to be refined
      * @param node
      */
-    getComponentForNode(node: Node): ComponentReference | null {
+    getComponentForNode(node: Node): ComponentReference | undefined {
         if (node instanceof HTMLElement) {
             if (node.parentElement && node.slot.length > 0 && node.parentElement.tagName.startsWith("VAADIN")) {
                 // use the parent element
                 const componentList = getComponents(node.parentElement!);
                 return componentList[componentList.length - 1];
             } else {
-
                 const componentList = getComponents(node);
                 return componentList[componentList.length - 1];
             }
         }
-        return null;
+        return undefined;
     }
 
+
+    getUiId() {
+        const vaadin = (window as any).Vaadin;
+        if (vaadin && vaadin.Flow) {
+            const { clients } = vaadin.Flow;
+            const appIds = Object.keys(clients);
+            debugger;
+            for (const appId of appIds) {
+                const client = clients[appId];
+                if (client.getNodeId) {
+                    return client.getUIId();
+                }
+            }
+        }
+        return -1;
+    }
     renderDetail(issue:RuleDetails) {
         const component = this.getComponentForNode(issue.node);
         return html`
@@ -449,20 +441,7 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
                     </span>
                 </div>
 
-                ${(issue.ruleId == "input_label_visible" || issue.ruleId == "input_label_exists") ? html`
-                    <div class="section">
-                        <h3 class="small-heading">Fix issue</h3>
-
-                        <div>
-                            <label for="input-label">Enter a label and set either a label or an invisible (Aria)
-                                label</label>
-                            <input class="text-field" id="input-label" @change=${this._labelUpdated}
-                                   placeholder="Type label here">
-                            <button class="button" @click="${() => this.setLabel(issue.node)}">set label</button>
-                            <button class="button" @click="${() => this.setAriaLabel(issue.node)}">set aria label
-                            </button>
-                        </div>
-                    </div>` : html``
+                ${(this.generateVaadinDetails(issue))
                 }
 
                 <div class="section">
@@ -479,6 +458,40 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
                 </div>
             </div>
         `;
+    }
+
+    private generateVaadinDetails(issue: RuleDetails) {
+        switch (issue.ruleId) {
+            case "input_label_visible":
+            case "input_label_exists":
+                return html`
+                    <div class="section">
+                        <h3 class="small-heading">Fix issue</h3>
+
+                        <div>
+                            <label for="input-label">Enter a label and set either a label or an invisible (Aria)
+                                label</label>
+                            <input class="text-field" id="input-label" @change=${this._labelUpdated}
+                                   placeholder="Type label here">
+                            <button class="button" @click="${() => this.setLabel(issue.node)}">set label</button>
+                            <button class="button" @click="${() => this.setAriaLabel(issue.node)}">set aria label
+                            </button>
+                        </div>
+                    </div>`;
+            case "page_title_exists":
+                return html`
+                    <div class="section">
+                        <h3 class="small-heading">Fix issue</h3>
+
+                        <div>
+                            <label for="input-page-title">Enter a page title</label>
+                            <input class="text-field" id="input-page-title" @change=${this._pageTitleUpdated}
+                                   placeholder="Type label here">
+                            <button class="button" @click="${() => this.setPageTitle()}">Set page title</button>
+                        </div>
+                    </div>`;
+        }
+        return nothing;
     }
 
     /**
@@ -536,8 +549,56 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         </svg>`;
     }
 
-    _labelUpdated(e: Event) {
+    private _labelUpdated(e: Event) {
         this.labeltext = (e.target as HTMLInputElement).value;
+    }
+
+    setLabel(node:Node) {
+        const element = node.parentElement;
+        // set the label on the client side
+        (element as any).label = this.labeltext;
+        // set the label on the server side
+        /*const componentList = getComponents(element!);
+        const component = componentList[componentList.length - 1];*/
+
+        const component = this.getComponentForNode(node);
+        if (component !== undefined) {
+            const serializableComponentRef: ComponentReference = {nodeId: component.nodeId, uiId: component.uiId};
+            devTools.send(`${AccessibilityChecker.NAME}-set-label`, {
+                nodeId: component.nodeId,
+                uiId: component.uiId,
+                label: this.labeltext
+            });
+        }
+    }
+
+    setAriaLabel(node:Node) {
+        const element = node.parentElement;
+        (element as any).accessibleName = this.labeltext;
+
+        const component = this.getComponentForNode(node);
+        if (component !== undefined) {
+            const serializableComponentRef: ComponentReference = {nodeId: component.nodeId, uiId: component.uiId};
+            devTools.send(`${AccessibilityChecker.NAME}-set-aria-label`, {
+                nodeId: component.nodeId,
+                uiId: component.uiId,
+                label: this.labeltext
+            });
+        }
+    }
+
+
+    private _pageTitleUpdated(e: Event) {
+        document.title = (e.target as HTMLInputElement).value;
+    }
+
+    setPageTitle() {
+        console.log("tedssd")
+        const uiId = this.getUiId();
+        devTools.send(`${AccessibilityChecker.NAME}-update-page-title`, {
+            label: this.labeltext,
+            uiId: uiId
+        });
     }
 
     public static NAME = 'accessibility-checker';
