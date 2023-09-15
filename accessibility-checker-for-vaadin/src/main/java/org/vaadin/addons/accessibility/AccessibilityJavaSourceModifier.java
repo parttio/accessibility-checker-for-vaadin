@@ -21,11 +21,10 @@ package org.vaadin.addons.accessibility;
  */
 
 import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.ImportDeclaration;
 import com.github.javaparser.ast.Node;
-import com.github.javaparser.ast.expr.MethodCallExpr;
-import com.github.javaparser.ast.expr.NameExpr;
-import com.github.javaparser.ast.expr.SimpleName;
-import com.github.javaparser.ast.expr.StringLiteralExpr;
+import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import com.github.javaparser.ast.expr.*;
 import com.github.javaparser.ast.nodeTypes.NodeWithBlockStmt;
 import com.github.javaparser.ast.nodeTypes.NodeWithExpression;
 import com.github.javaparser.ast.stmt.ExpressionStmt;
@@ -39,6 +38,7 @@ import com.vaadin.base.devserver.themeeditor.utils.ThemeEditorException;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.internal.ComponentTracker;
 import com.vaadin.flow.dom.Element;
+import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.server.VaadinContext;
 import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.server.startup.ApplicationConfiguration;
@@ -50,10 +50,10 @@ import org.vaadin.addons.accessibility.visitors.LabelVisitor;
 
 import java.io.File;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Optional;
-import java.util.concurrent.TimeUnit;
+import java.util.*;
+
+import static com.github.javaparser.StaticJavaParser.parseExpression;
+import static com.github.javaparser.StaticJavaParser.parseName;
 
 public class AccessibilityJavaSourceModifier extends Editor {
 
@@ -87,12 +87,72 @@ public class AccessibilityJavaSourceModifier extends Editor {
             String label) {
         assert uiId != null && nodeId != null && label != null;
         VaadinSession session = getSession();
-        getSession().access(() -> {
+        session.access(() -> {
             Component component = getComponent(session, uiId, nodeId);
             setLabel(component, label, new AriaLabelVisitor());
         });
     }
 
+    public static String escapeForJava(String value, boolean quote) {
+        StringBuilder builder = new StringBuilder();
+        if (quote)
+            builder.append("\"");
+        for (char c : value.toCharArray()) {
+            if (c == '\'')
+                builder.append("\\'");
+            else if (c == '\"')
+                builder.append("\\\"");
+            else if (c == '\r')
+                builder.append("\\r");
+            else if (c == '\n')
+                builder.append("\\n");
+            else if (c == '\t')
+                builder.append("\\t");
+            else if (c < 32 || c >= 127)
+                builder.append(String.format("\\u%04x", (int) c));
+            else
+                builder.append(c);
+        }
+        if (quote)
+            builder.append("\"");
+        return builder.toString();
+    }
+
+    public void setPageTitle(Integer uiId, String pageTitle) {
+        assert uiId != null && pageTitle != null;
+        VaadinSession session = getSession();
+        session.access(() -> {
+            Component currentView = session.getUIById(uiId).getCurrentView();
+            try {
+                List<Modification> modifications = new ArrayList<>();
+                ComponentTracker.Location createLocation = getCreateLocation(
+                        currentView);
+                File sourceFile = getSourceFile(createLocation);
+                int sourceOffset = modifyClass(sourceFile, cu -> {
+
+                    Optional<ClassOrInterfaceDeclaration> classOrInterfaceDeclaration = cu.getClassByName(currentView.getClass().getSimpleName());
+                    classOrInterfaceDeclaration.ifPresent(node -> {
+                        SingleMemberAnnotationExpr normalAnnotationExpr = new SingleMemberAnnotationExpr(
+                                parseName(PageTitle.class.getSimpleName()),
+                                parseExpression(escapeForJava(pageTitle, true))
+                        );
+                        node.addAnnotation(normalAnnotationExpr);
+                        //NormalAnnotationExpr normalAnnotationExpr = node.addAndGetAnnotation(PageTitle.class);
+                       // normalAnnotationExpr.addPair("value", escapeForJava(pageTitle, true));
+                        modifications.add(Modification.insertLineBefore(node, normalAnnotationExpr));
+                    });
+                    return modifications;
+                });
+
+                if (sourceOffset != 0) {
+                    ComponentTracker.refreshLocation(createLocation, sourceOffset);
+                }
+
+            } catch (UnsupportedOperationException ex) {
+                throw new ThemeEditorException(ex);
+            }
+        });
+    }
     protected void setLabel(Component component, String label, GenericStringVisitor visitor) {
         try {
             ComponentTracker.Location createLocation = getCreateLocation(
