@@ -23,10 +23,8 @@ package org.vaadin.addons.accessibility;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.ImportDeclaration;
 import com.github.javaparser.ast.Node;
-import com.github.javaparser.ast.expr.MethodCallExpr;
-import com.github.javaparser.ast.expr.NameExpr;
-import com.github.javaparser.ast.expr.SimpleName;
-import com.github.javaparser.ast.expr.StringLiteralExpr;
+import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import com.github.javaparser.ast.expr.*;
 import com.github.javaparser.ast.nodeTypes.NodeWithBlockStmt;
 import com.github.javaparser.ast.nodeTypes.NodeWithExpression;
 import com.github.javaparser.ast.stmt.ExpressionStmt;
@@ -53,7 +51,9 @@ import org.vaadin.addons.accessibility.visitors.LabelVisitor;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
+
+import static com.github.javaparser.StaticJavaParser.parseExpression;
+import static com.github.javaparser.StaticJavaParser.parseName;
 
 public class AccessibilityJavaSourceModifier extends Editor {
 
@@ -93,8 +93,33 @@ public class AccessibilityJavaSourceModifier extends Editor {
         });
     }
 
-    public void setPageTitle(Integer uiId, String label) {
-        assert uiId != null && label != null;
+    public static String escapeForJava(String value, boolean quote) {
+        StringBuilder builder = new StringBuilder();
+        if (quote)
+            builder.append("\"");
+        for (char c : value.toCharArray()) {
+            if (c == '\'')
+                builder.append("\\'");
+            else if (c == '\"')
+                builder.append("\\\"");
+            else if (c == '\r')
+                builder.append("\\r");
+            else if (c == '\n')
+                builder.append("\\n");
+            else if (c == '\t')
+                builder.append("\\t");
+            else if (c < 32 || c >= 127)
+                builder.append(String.format("\\u%04x", (int) c));
+            else
+                builder.append(c);
+        }
+        if (quote)
+            builder.append("\"");
+        return builder.toString();
+    }
+
+    public void setPageTitle(Integer uiId, String pageTitle) {
+        assert uiId != null && pageTitle != null;
         VaadinSession session = getSession();
         session.access(() -> {
             Component currentView = session.getUIById(uiId).getCurrentView();
@@ -105,10 +130,18 @@ public class AccessibilityJavaSourceModifier extends Editor {
                 File sourceFile = getSourceFile(createLocation);
                 int sourceOffset = modifyClass(sourceFile, cu -> {
 
-                    modifications.add(addImport(cu, PageTitle.class.getCanonicalName()));
-                    //cu.getClassByName("").get().addSingleMemberAnnotation()
-
-                    return modifications;//Collections.singletonList(mod);
+                    Optional<ClassOrInterfaceDeclaration> classOrInterfaceDeclaration = cu.getClassByName(currentView.getClass().getSimpleName());
+                    classOrInterfaceDeclaration.ifPresent(node -> {
+                        SingleMemberAnnotationExpr normalAnnotationExpr = new SingleMemberAnnotationExpr(
+                                parseName(PageTitle.class.getSimpleName()),
+                                parseExpression(escapeForJava(pageTitle, true))
+                        );
+                        node.addAnnotation(normalAnnotationExpr);
+                        //NormalAnnotationExpr normalAnnotationExpr = node.addAndGetAnnotation(PageTitle.class);
+                       // normalAnnotationExpr.addPair("value", escapeForJava(pageTitle, true));
+                        modifications.add(Modification.insertLineBefore(node, normalAnnotationExpr));
+                    });
+                    return modifications;
                 });
 
                 if (sourceOffset != 0) {
@@ -119,11 +152,6 @@ public class AccessibilityJavaSourceModifier extends Editor {
                 throw new ThemeEditorException(ex);
             }
         });
-    }
-
-    private Modification addImport(CompilationUnit cu, String className) {
-        return Modification.addImport(cu,
-                new ImportDeclaration(className, false, false));
     }
     protected void setLabel(Component component, String label, GenericStringVisitor visitor) {
         try {

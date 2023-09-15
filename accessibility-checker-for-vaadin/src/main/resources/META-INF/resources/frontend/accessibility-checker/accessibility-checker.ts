@@ -198,9 +198,6 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
     @property()
     indexDetail?: number;
 
-    @property()
-    labeltext = "";
-
     @state()
     private element: HTMLElement | null = null;
 
@@ -392,7 +389,6 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         if (vaadin && vaadin.Flow) {
             const { clients } = vaadin.Flow;
             const appIds = Object.keys(clients);
-            debugger;
             for (const appId of appIds) {
                 const client = clients[appId];
                 if (client.getNodeId) {
@@ -471,11 +467,10 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
                         <div>
                             <label for="input-label">Enter a label and set either a label or an invisible (Aria)
                                 label</label>
-                            <input class="text-field" id="input-label" @change=${this._labelUpdated}
+                            <input class="text-field" id="input-label"
                                    placeholder="Type label here">
-                            <button class="button" @click="${() => this.setLabel(issue.node)}">set label</button>
-                            <button class="button" @click="${() => this.setAriaLabel(issue.node)}">set aria label
-                            </button>
+                            <button class="button" @click="${() => this.setLabel(issue.node, '#input-label')}">Set label</button>
+                            <button class="button" @click="${() => this.setAriaLabel(issue.node, '#input-label')}">Set aria label</button>
                         </div>
                     </div>`;
             case "page_title_exists":
@@ -485,9 +480,9 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
 
                         <div>
                             <label for="input-page-title">Enter a page title</label>
-                            <input class="text-field" id="input-page-title" @change=${this._pageTitleUpdated}
-                                   placeholder="Type label here">
-                            <button class="button" @click="${() => this.setPageTitle()}">Set page title</button>
+                            <input class="text-field" id="input-page-title"
+                                   placeholder="Type Page Title here">
+                            <button class="button" @click="${() => this.setPageTitle('#input-page-title')}">Set page title</button>
                         </div>
                     </div>`;
         }
@@ -549,14 +544,12 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         </svg>`;
     }
 
-    private _labelUpdated(e: Event) {
-        this.labeltext = (e.target as HTMLInputElement).value;
-    }
 
-    setLabel(node:Node) {
+    setLabel(node:Node, id: string) {
+        const labelText = (this.renderRoot.querySelector(id) as HTMLInputElement).value;
         const element = node.parentElement;
         // set the label on the client side
-        (element as any).label = this.labeltext;
+        (element as any).label = labelText;
         // set the label on the server side
         /*const componentList = getComponents(element!);
         const component = componentList[componentList.length - 1];*/
@@ -567,14 +560,15 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
             devTools.send(`${AccessibilityChecker.NAME}-set-label`, {
                 nodeId: component.nodeId,
                 uiId: component.uiId,
-                label: this.labeltext
+                label: labelText
             });
         }
     }
 
-    setAriaLabel(node:Node) {
+    setAriaLabel(node:Node, id: string) {
+        const labelText = (this.renderRoot.querySelector(id) as HTMLInputElement).value;
         const element = node.parentElement;
-        (element as any).accessibleName = this.labeltext;
+        (element as any).accessibleName = labelText;
 
         const component = this.getComponentForNode(node);
         if (component !== undefined) {
@@ -582,21 +576,17 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
             devTools.send(`${AccessibilityChecker.NAME}-set-aria-label`, {
                 nodeId: component.nodeId,
                 uiId: component.uiId,
-                label: this.labeltext
+                label: labelText
             });
         }
     }
 
-
-    private _pageTitleUpdated(e: Event) {
-        document.title = (e.target as HTMLInputElement).value;
-    }
-
-    setPageTitle() {
-        console.log("tedssd")
+    setPageTitle(id:string) {
+        const title = (this.renderRoot.querySelector(id) as HTMLInputElement).value;
+        document.title = title;
         const uiId = this.getUiId();
         devTools.send(`${AccessibilityChecker.NAME}-update-page-title`, {
-            label: this.labeltext,
+            label: title,
             uiId: uiId
         });
     }
