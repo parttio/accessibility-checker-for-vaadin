@@ -476,7 +476,7 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
             case "page_title_exists":
                 return html`
                     <div class="section">
-                        <h3 class="small-heading">Fix issue</h3>
+                        <h3 class="small-heading">Fix issue (<a href="https://vaadin.com/docs/latest/routing/page-titles" target="_blank">docs</a>)</h3>
 
                         <div>
                             <label for="input-page-title">Enter a page title</label>
