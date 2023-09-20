@@ -29,6 +29,7 @@ import com.github.javaparser.ast.nodeTypes.NodeWithBlockStmt;
 import com.github.javaparser.ast.nodeTypes.NodeWithExpression;
 import com.github.javaparser.ast.stmt.ExpressionStmt;
 import com.github.javaparser.ast.stmt.Statement;
+import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.printer.lexicalpreservation.LexicalPreservingPrinter;
 import com.github.javaparser.utils.SourceRoot;
 import com.vaadin.base.devserver.editor.Editor;
@@ -36,7 +37,11 @@ import com.vaadin.base.devserver.editor.Where;
 import com.vaadin.base.devserver.themeeditor.utils.LineNumberVisitor;
 import com.vaadin.base.devserver.themeeditor.utils.ThemeEditorException;
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.internal.ComponentTracker;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.dom.Element;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.server.VaadinContext;
@@ -52,8 +57,7 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.*;
 
-import static com.github.javaparser.StaticJavaParser.parseExpression;
-import static com.github.javaparser.StaticJavaParser.parseName;
+import static com.github.javaparser.StaticJavaParser.*;
 
 public class AccessibilityJavaSourceModifier extends Editor {
 
@@ -153,6 +157,49 @@ public class AccessibilityJavaSourceModifier extends Editor {
             }
         });
     }
+
+    public void updateRouteExtends(Integer uiId) {
+        assert uiId != null;
+        VaadinSession session = getSession();
+        session.access(() -> {
+            Component currentView = session.getUIById(uiId).getCurrentView();
+            try {
+                List<Modification> modifications = new ArrayList<>();
+                ComponentTracker.Location createLocation = getCreateLocation(
+                        currentView);
+                File sourceFile = getSourceFile(createLocation);
+                int sourceOffset = modifyClass(sourceFile, cu -> {
+
+                    Optional<ClassOrInterfaceDeclaration> classOrInterfaceDeclaration = cu.getClassByName(currentView.getClass().getSimpleName());
+                    classOrInterfaceDeclaration.ifPresent(node -> {
+                        Optional<ClassOrInterfaceType> optionalClassOrInterfaceType = node.getExtendedTypes().stream()
+                                .filter(t -> {
+                                    String simpleName = t.getNameAsString();
+                                    return simpleName.equals(VerticalLayout.class.getSimpleName())
+                                            || simpleName.equals(HorizontalLayout.class.getSimpleName())
+                                            || simpleName.equals(Div.class.getSimpleName());
+                                }).findFirst();
+                        optionalClassOrInterfaceType.ifPresent(extendedTypes -> {
+                                ClassOrInterfaceType newNode = parseClassOrInterfaceType(Main.class.getSimpleName());
+                                modifications.add(Modification.addImport(cu, new ImportDeclaration(Main.class.getName(), false, false)));
+                                modifications.add(Modification.replace(extendedTypes, newNode));
+                        });
+                    });
+                    return modifications;
+                });
+
+                if (sourceOffset != 0) {
+                    ComponentTracker.refreshLocation(createLocation, sourceOffset);
+                }
+
+            } catch (UnsupportedOperationException ex) {
+                throw new ThemeEditorException(ex);
+            }
+        });
+    }
+
+
+
     protected void setLabel(Component component, String label, GenericStringVisitor visitor) {
         try {
             ComponentTracker.Location createLocation = getCreateLocation(

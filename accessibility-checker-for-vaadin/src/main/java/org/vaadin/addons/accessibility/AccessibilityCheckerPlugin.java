@@ -100,6 +100,11 @@ public class AccessibilityCheckerPlugin implements DevToolsMessageHandler {
             String label = data.getString("label");
             getAccessibilityJavaSourceModifier().setPageTitle(uiId, label);
             return true;
+        } else if (command.equals(ACCESSIBILITY_CHECKER + "-update-route-extends")) {
+
+            int uiId = (int) data.getNumber("uiId");
+            getAccessibilityJavaSourceModifier().updateRouteExtends(uiId);
+            return true;
         }
         return false;
     }
