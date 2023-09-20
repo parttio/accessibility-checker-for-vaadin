@@ -485,6 +485,17 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
                             <button class="button" @click="${() => this.setPageTitle('#input-page-title')}">Set page title</button>
                         </div>
                     </div>`;
+            case "skip_main_exists":
+                // todo detect and display the superclass
+                return html`
+                    <div class="section">
+                        <h3 class="small-heading">Fix issue</h3>
+
+                        <div>
+                            This will replace your superclass for the Route to a Main object if the superclass is a VerticalLayout, HorizontalLayout or a Div.
+                            <button class="button" @click="${() => this.updateRouteExtends()}">Update the superclass</button>
+                        </div>
+                    </div>`;
         }
         return nothing;
     }
@@ -587,6 +598,13 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         const uiId = this.getUiId();
         devTools.send(`${AccessibilityChecker.NAME}-update-page-title`, {
             label: title,
+            uiId: uiId
+        });
+    }
+
+    updateRouteExtends() {
+        const uiId = this.getUiId();
+        devTools.send(`${AccessibilityChecker.NAME}-update-route-extends`, {
             uiId: uiId
         });
     }

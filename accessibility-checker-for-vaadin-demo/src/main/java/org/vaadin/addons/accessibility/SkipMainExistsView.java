@@ -1,17 +1,17 @@
 package org.vaadin.addons.accessibility;
 
-import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 
-@PageTitle("test")
-@Route("")
-public class View extends Main {
+@PageTitle("skip_main_exists")
+@Route("skip_main_exists")
+public class SkipMainExistsView extends VerticalLayout {
 
-    public View() {
+    public SkipMainExistsView() {
         TextField textField = new TextField();
+        textField.setLabel("label for input");
         add(textField);
     }
 }
