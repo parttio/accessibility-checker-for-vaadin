@@ -20,7 +20,7 @@
     </organization>
 
     <properties>
-        <vaadin.version>24.2.0.alpha11</vaadin.version>
+        <vaadin.version>24.2-SNAPSHOT</vaadin.version>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -70,11 +70,6 @@
         </pluginRepository>
     </pluginRepositories>
     <dependencies>
-        <dependency>
-            <groupId>javax.servlet</groupId>
-            <artifactId>javax.servlet-api</artifactId>
-            <version>3.0.1</version>
-        </dependency>
         <dependency>
             <groupId>com.vaadin</groupId>
             <!-- Replace artifactId with vaadin-core to use only free components -->
