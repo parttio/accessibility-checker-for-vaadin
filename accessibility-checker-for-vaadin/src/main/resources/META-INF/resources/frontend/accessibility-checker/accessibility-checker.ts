@@ -505,7 +505,7 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
                             This will replace your superclass for the Route to a Main object if the superclass is a VerticalLayout, HorizontalLayout or a Div.
                             <button class="button" @click="${() => this.updateRouteExtends()}">Update the superclass</button>
                         </div>
-                    </div>;
+                    </div>`;
         }
         return nothing;
     }
