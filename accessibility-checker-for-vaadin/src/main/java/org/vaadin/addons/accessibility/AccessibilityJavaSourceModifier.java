@@ -21,7 +21,6 @@ package org.vaadin.addons.accessibility;
  */
 
 import com.github.javaparser.ast.CompilationUnit;
-import com.github.javaparser.ast.ImportDeclaration;
 import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.expr.*;
@@ -37,6 +36,9 @@ import com.vaadin.base.devserver.editor.Where;
 import com.vaadin.base.devserver.themeeditor.utils.LineNumberVisitor;
 import com.vaadin.base.devserver.themeeditor.utils.ThemeEditorException;
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.HasAriaLabel;
+import com.vaadin.flow.component.HasLabel;
+import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.internal.ComponentTracker;
@@ -49,6 +51,7 @@ import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.server.startup.ApplicationConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.vaadin.addons.accessibility.visitors.AltTextVisitor;
 import org.vaadin.addons.accessibility.visitors.AriaLabelVisitor;
 import org.vaadin.addons.accessibility.visitors.GenericStringVisitor;
 import org.vaadin.addons.accessibility.visitors.LabelVisitor;
@@ -83,7 +86,11 @@ public class AccessibilityJavaSourceModifier extends Editor {
         VaadinSession session = getSession();
         getSession().access(() -> {
             Component component = getComponent(session, uiId, nodeId);
-            setLabel(component, label, new LabelVisitor());
+            if (component instanceof HasLabel) {
+                setText(component, label, new LabelVisitor());
+            } else {
+                throw new ThemeEditorException("The component does not implement HasLabel");
+            }
         });
     }
 
@@ -93,10 +100,27 @@ public class AccessibilityJavaSourceModifier extends Editor {
         VaadinSession session = getSession();
         session.access(() -> {
             Component component = getComponent(session, uiId, nodeId);
-            setLabel(component, label, new AriaLabelVisitor());
+            if (component instanceof HasAriaLabel) {
+                setText(component, label, new AriaLabelVisitor());
+            } else {
+                throw new ThemeEditorException("The component does not implement HasAriaLabel");
+            }
         });
     }
 
+    public void setAltText(Integer uiId, Integer nodeId,
+                             String altText) {
+        assert uiId != null && nodeId != null && altText != null;
+        VaadinSession session = getSession();
+        session.access(() -> {
+            Component component = getComponent(session, uiId, nodeId);
+            if (component instanceof Image) {
+                setText(component, altText, new AltTextVisitor());
+            } else {
+                throw new ThemeEditorException("The component is not an image");
+            }
+        });
+    }
     public static String escapeForJava(String value, boolean quote) {
         StringBuilder builder = new StringBuilder();
         if (quote)
@@ -200,7 +224,7 @@ public class AccessibilityJavaSourceModifier extends Editor {
 
 
 
-    protected void setLabel(Component component, String label, GenericStringVisitor visitor) {
+    protected void setText(Component component, String text, GenericStringVisitor visitor) {
         try {
             ComponentTracker.Location createLocation = getCreateLocation(
                     component);
@@ -208,7 +232,7 @@ public class AccessibilityJavaSourceModifier extends Editor {
             int sourceOffset = modifyClass(sourceFile, cu -> {
                 SimpleName scope = findLocalVariableOrField(cu,
                         createLocation.lineNumber());
-                Node newNode = createAddStatement(scope, label, visitor);
+                Node newNode = createAddStatement(scope, text, visitor);
                 Modification mod;
                 ExpressionStmt stmt = findStmt(cu, component, visitor);
                 if (stmt == null) {

@@ -94,6 +94,12 @@ public class AccessibilityCheckerPlugin implements DevToolsMessageHandler {
             String label = data.getString("label");
             getAccessibilityJavaSourceModifier().setAriaLabel(uiId, nodeId, label);
             return true;
+        } else if (command.equals(ACCESSIBILITY_CHECKER + "-set-alt-text")) {
+            int nodeId = (int) data.getNumber("nodeId");
+            int uiId = (int) data.getNumber("uiId");
+            String label = data.getString("text");
+            getAccessibilityJavaSourceModifier().setAltText(uiId, nodeId, label);
+            return true;
         } else if (command.equals(ACCESSIBILITY_CHECKER + "-update-page-title")) {
 
             int uiId = (int) data.getNumber("uiId");
