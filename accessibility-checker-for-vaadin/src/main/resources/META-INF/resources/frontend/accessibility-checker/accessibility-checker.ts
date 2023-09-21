@@ -485,6 +485,16 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
                             <button class="button" @click="${() => this.setPageTitle('#input-page-title')}">Set page title</button>
                         </div>
                     </div>`;
+            case "img_alt_valid":
+                return html`
+                    <div class="section">
+                        <h3 class="small-heading">Fix issue</h3>
+                        <div>
+                            <label for="input-label">Enter an alternative text for the image or an empty text if it's decorative</label>
+                            <input class="text-field" id="input-alt" placeholder="Type alternative text here">
+                            <button class="button" @click="${() => this.setAltText(issue.node, '#input-alt')}">Set alternative text</button>
+                        </div>
+                    </div>`;
         }
         return nothing;
     }
@@ -551,9 +561,6 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         // set the label on the client side
         (element as any).label = labelText;
         // set the label on the server side
-        /*const componentList = getComponents(element!);
-        const component = componentList[componentList.length - 1];*/
-
         const component = this.getComponentForNode(node);
         if (component !== undefined) {
             const serializableComponentRef: ComponentReference = {nodeId: component.nodeId, uiId: component.uiId};
@@ -572,7 +579,6 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
 
         const component = this.getComponentForNode(node);
         if (component !== undefined) {
-            const serializableComponentRef: ComponentReference = {nodeId: component.nodeId, uiId: component.uiId};
             devTools.send(`${AccessibilityChecker.NAME}-set-aria-label`, {
                 nodeId: component.nodeId,
                 uiId: component.uiId,
@@ -591,6 +597,21 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         });
     }
 
+    setAltText(node:Node, id: string) {
+        const text = (this.renderRoot.querySelector(id) as HTMLInputElement).value;
+        const element = node as HTMLImageElement;
+        // set the label on the client side
+        element.alt = text;
+        // set the label on the server side
+        const component = this.getComponentForNode(node);
+        if (component !== undefined) {
+            devTools.send(`${AccessibilityChecker.NAME}-set-alt-text`, {
+                nodeId: component.nodeId,
+                uiId: component.uiId,
+                text: text
+            });
+        }
+    }
     public static NAME = 'accessibility-checker';
 
     handleMessage(message: ServerMessage): boolean {
