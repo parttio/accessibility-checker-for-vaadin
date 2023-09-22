@@ -165,8 +165,6 @@ public class AccessibilityJavaSourceModifier extends Editor {
                                 parseExpression(escapeForJava(pageTitle, true))
                         );
                         node.addAnnotation(normalAnnotationExpr);
-                        //NormalAnnotationExpr normalAnnotationExpr = node.addAndGetAnnotation(PageTitle.class);
-                       // normalAnnotationExpr.addPair("value", escapeForJava(pageTitle, true));
                         modifications.add(Modification.insertLineBefore(node, normalAnnotationExpr));
                     });
                     return modifications;
@@ -288,13 +286,21 @@ public class AccessibilityJavaSourceModifier extends Editor {
     }
 
     protected Statement createAddStatement(SimpleName scope,
-                                                String className,
+                                                String text,
                                                 GenericStringVisitor visitor) {
         MethodCallExpr methodCallExpr = new MethodCallExpr(visitor.getMethodName());
         if (scope != null) {
             methodCallExpr.setScope(new NameExpr(scope));
         }
-        methodCallExpr.getArguments().add(new StringLiteralExpr(className));
+        if (visitor.isTranslated()) {
+            // add getTranslation
+            MethodCallExpr getTranslationExpr = new MethodCallExpr("getTranslation");
+            getTranslationExpr.getArguments().add(new StringLiteralExpr(text));
+            methodCallExpr.getArguments().add(getTranslationExpr);
+        } else {
+            methodCallExpr.getArguments().add(new StringLiteralExpr(text));
+        }
+
         Statement statement = new ExpressionStmt(methodCallExpr);
         statement.setComment(visitor.getComment());
         return statement;

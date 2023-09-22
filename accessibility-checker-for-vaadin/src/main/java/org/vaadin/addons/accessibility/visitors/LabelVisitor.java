@@ -82,4 +82,10 @@ public class LabelVisitor
     public LineComment getComment() {
         return COMMENT;
     }
+
+
+    @Override
+    public boolean isTranslated() {
+        return false;
+    }
 }
