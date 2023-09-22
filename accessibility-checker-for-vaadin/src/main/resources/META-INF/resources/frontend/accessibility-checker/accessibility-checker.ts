@@ -632,9 +632,15 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
     }
     public static NAME = 'accessibility-checker';
 
+    /**
+     * Handle the messages from the server
+     *
+     * @param message
+     */
     handleMessage(message: ServerMessage): boolean {
 
         if (message.command === `${AccessibilityChecker.NAME}-init`) {
+            // add the Javascript only when the plugin is initialized
             const scriptElement = document.createElement("script");
             scriptElement.setAttribute("src", "https://unpkg.com/accessibility-checker-engine@latest/ace.js");
             scriptElement.setAttribute("async", "true");

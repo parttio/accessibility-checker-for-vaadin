@@ -20,10 +20,12 @@ package org.vaadin.addons.accessibility;
  * #L%
  */
 
+import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.ImportDeclaration;
 import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import com.github.javaparser.ast.body.ConstructorDeclaration;
 import com.github.javaparser.ast.expr.*;
 import com.github.javaparser.ast.nodeTypes.NodeWithBlockStmt;
 import com.github.javaparser.ast.nodeTypes.NodeWithExpression;
@@ -52,10 +54,7 @@ import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.server.startup.ApplicationConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.vaadin.addons.accessibility.visitors.AltTextVisitor;
-import org.vaadin.addons.accessibility.visitors.AriaLabelVisitor;
-import org.vaadin.addons.accessibility.visitors.GenericStringVisitor;
-import org.vaadin.addons.accessibility.visitors.LabelVisitor;
+import org.vaadin.addons.accessibility.visitors.*;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -204,11 +203,17 @@ public class AccessibilityJavaSourceModifier extends Editor {
                                             || simpleName.equals(HorizontalLayout.class.getSimpleName())
                                             || simpleName.equals(Div.class.getSimpleName());
                                 }).findFirst();
-                        optionalClassOrInterfaceType.ifPresent(extendedTypes -> {
-                                ClassOrInterfaceType newNode = parseClassOrInterfaceType(Main.class.getSimpleName());
-                                modifications.add(Modification.addImport(cu, new ImportDeclaration(Main.class.getName(), false, false)));
-                                modifications.add(Modification.replace(extendedTypes, newNode));
-                        });
+                        if (optionalClassOrInterfaceType.isPresent()) {
+                            ClassOrInterfaceType extendedTypes = optionalClassOrInterfaceType.get();
+                            ClassOrInterfaceType newNode = parseClassOrInterfaceType(Main.class.getSimpleName());
+                            modifications.add(Modification.addImport(cu, new ImportDeclaration(Main.class.getName(), false, false)));
+                            modifications.add(Modification.replace(extendedTypes, newNode));
+                        } else {
+                            // add role main in the constructor getElement().setAttribute("role", "main");
+                            ConstructorDeclaration constructorDeclaration = cu.accept(new ConstructorVisitor(), null);
+                            Statement staticStatement = StaticJavaParser.parseStatement("getElement().setAttribute(\"role\", \"main\");");
+                            modifications.add(Modification.insertAtEndOfBlock(constructorDeclaration, staticStatement));
+                        }
                     });
                     return modifications;
                 });

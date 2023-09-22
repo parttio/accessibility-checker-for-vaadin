@@ -24,11 +24,8 @@ import com.vaadin.base.devserver.DevToolsInterface;
 import com.vaadin.base.devserver.DevToolsMessageHandler;
 import com.vaadin.base.devserver.IdeIntegration;
 import com.vaadin.flow.component.Component;
-import com.vaadin.flow.component.UI;
-import com.vaadin.flow.component.dependency.JavaScript;
 import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.component.dependency.NpmPackage;
-import com.vaadin.flow.component.internal.ComponentTracker;
 import com.vaadin.flow.dom.Element;
 import com.vaadin.flow.server.VaadinService;
 import com.vaadin.flow.server.VaadinSession;
@@ -47,6 +44,8 @@ import java.util.Optional;
 public class AccessibilityCheckerPlugin implements DevToolsMessageHandler {
 
     public static final String ACCESSIBILITY_CHECKER = "accessibility-checker";
+    public static final String NODE_ID = "nodeId";
+    public static final String UI_ID = "uiId";
 
     private IdeIntegration ideIntegration;
     private AccessibilityJavaSourceModifier accessibilityJavaSourceModifier;
@@ -63,19 +62,14 @@ public class AccessibilityCheckerPlugin implements DevToolsMessageHandler {
     @Override
     public boolean handleMessage(String command, JsonObject data, DevToolsInterface devToolsInterface) {
         if (command.equals(ACCESSIBILITY_CHECKER + "-show-component-creation-location")) {
-            int nodeId = (int) data.getNumber("nodeId");
-            int uiId = (int) data.getNumber("uiId");
+            int nodeId = (int) data.getNumber(NODE_ID);
+            int uiId = (int) data.getNumber(UI_ID);
             VaadinSession session = VaadinSession.getCurrent();
             session.access(() -> {
                 Element element = session.findElement(uiId, nodeId);
                 Optional<Component> c = element.getComponent();
                 if (c.isPresent()) {
                     getIdeIntegration().showComponentCreateInIde(c.get());
-/*                    if ("showComponentCreateLocation".equals(command)) {
-                        getIdeIntegration().showComponentCreateInIde(c.get());
-                    } else {
-                        getIdeIntegration().showComponentAttachInIde(c.get());
-                    }*/
                 } else {
                     System.out.println(
                             "Only component locations are tracked. The given node id refers to an element and not a component");
@@ -83,32 +77,30 @@ public class AccessibilityCheckerPlugin implements DevToolsMessageHandler {
             });
             return true;
         } else if (command.equals(ACCESSIBILITY_CHECKER + "-set-label")) {
-            int nodeId = (int) data.getNumber("nodeId");
-            int uiId = (int) data.getNumber("uiId");
+            int nodeId = (int) data.getNumber(NODE_ID);
+            int uiId = (int) data.getNumber(UI_ID);
             String label = data.getString("label");
             getAccessibilityJavaSourceModifier().setLabel(uiId, nodeId, label);
             return true;
         } else if (command.equals(ACCESSIBILITY_CHECKER + "-set-aria-label")) {
-            int nodeId = (int) data.getNumber("nodeId");
-            int uiId = (int) data.getNumber("uiId");
+            int nodeId = (int) data.getNumber(NODE_ID);
+            int uiId = (int) data.getNumber(UI_ID);
             String label = data.getString("label");
             getAccessibilityJavaSourceModifier().setAriaLabel(uiId, nodeId, label);
             return true;
         } else if (command.equals(ACCESSIBILITY_CHECKER + "-set-alt-text")) {
-            int nodeId = (int) data.getNumber("nodeId");
-            int uiId = (int) data.getNumber("uiId");
+            int nodeId = (int) data.getNumber(NODE_ID);
+            int uiId = (int) data.getNumber(UI_ID);
             String label = data.getString("text");
             getAccessibilityJavaSourceModifier().setAltText(uiId, nodeId, label);
             return true;
         } else if (command.equals(ACCESSIBILITY_CHECKER + "-update-page-title")) {
-
-            int uiId = (int) data.getNumber("uiId");
+            int uiId = (int) data.getNumber(UI_ID);
             String label = data.getString("label");
             getAccessibilityJavaSourceModifier().setPageTitle(uiId, label);
             return true;
         } else if (command.equals(ACCESSIBILITY_CHECKER + "-update-route-extends")) {
-
-            int uiId = (int) data.getNumber("uiId");
+            int uiId = (int) data.getNumber(UI_ID);
             getAccessibilityJavaSourceModifier().updateRouteExtends(uiId);
             return true;
         }
