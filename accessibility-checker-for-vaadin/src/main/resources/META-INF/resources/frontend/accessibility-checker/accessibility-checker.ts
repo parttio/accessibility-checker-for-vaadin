@@ -485,6 +485,16 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
                             <button class="button" @click="${() => this.setPageTitle('#input-page-title')}">Set page title</button>
                         </div>
                     </div>`;
+            case "frame_title_exists":
+                return html`
+                    <div class="section">
+                        <h3 class="small-heading">Fix issue</h3>
+                        <div>
+                            <label for="input-label">Enter a title for the html component</label>
+                            <input class="text-field" id="input-title" placeholder="Type alternative text here">
+                            <button class="button" @click="${() => this.setTitle(issue.node, '#input-title')}">Set title</button>
+                        </div>
+                    </div>`
             case "img_alt_valid":
                 return html`
                     <div class="section">
@@ -613,6 +623,22 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         devTools.send(`${AccessibilityChecker.NAME}-update-route-extends`, {
             uiId: uiId
         });
+    }
+
+    setTitle(node:Node, id: string) {
+        const text = (this.renderRoot.querySelector(id) as HTMLInputElement).value;
+        const element = node as HTMLElement;
+        // set the label on the client side
+        element.title = text;
+        // set the label on the server side
+        const component = this.getComponentForNode(node);
+        if (component !== undefined) {
+            devTools.send(`${AccessibilityChecker.NAME}-set-title`, {
+                nodeId: component.nodeId,
+                uiId: component.uiId,
+                title: text
+            });
+        }
     }
 
     setAltText(node:Node, id: string) {

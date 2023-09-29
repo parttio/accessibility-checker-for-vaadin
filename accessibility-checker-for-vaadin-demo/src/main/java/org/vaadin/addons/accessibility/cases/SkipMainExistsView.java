@@ -1,4 +1,4 @@
-package org.vaadin.addons.accessibility;
+package org.vaadin.addons.accessibility.cases;
 
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;

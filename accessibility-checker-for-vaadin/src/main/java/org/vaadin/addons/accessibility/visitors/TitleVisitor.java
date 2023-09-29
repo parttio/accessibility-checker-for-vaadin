@@ -33,14 +33,14 @@ import com.github.javaparser.ast.visitor.GenericVisitorAdapter;
  *
  * Scope may be null in case of own instance method calls.
  */
-public class LabelVisitor
+public class TitleVisitor
         extends GenericVisitorAdapter<ExpressionStmt, String>  implements GenericStringVisitor{
 
-    public static final String METHOD_NAME = "setLabel";
+    public static final String METHOD_NAME = "setTitle";
     private final SimpleName methodName = new SimpleName(METHOD_NAME);
-    public static final LineComment COMMENT = new LineComment("<accessibility-plugin-label>");
+    public static final LineComment COMMENT = new LineComment("<accessibility-plugin-title>");
 
-    public LabelVisitor() {
+    public TitleVisitor() {
     }
 
     @Override
@@ -82,7 +82,6 @@ public class LabelVisitor
     public LineComment getComment() {
         return COMMENT;
     }
-
 
     @Override
     public boolean isTranslated() {

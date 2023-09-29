@@ -32,4 +32,11 @@ public interface GenericStringVisitor extends GenericVisitor<ExpressionStmt, Str
     String getMethodName();
 
     LineComment getComment();
+
+    /**
+     * Wrap the text in getTranslation (translation provider)
+     *
+     * @return
+     */
+    boolean isTranslated();
 }
