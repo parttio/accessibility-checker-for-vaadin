@@ -41,6 +41,8 @@ import com.vaadin.base.devserver.themeeditor.utils.ThemeEditorException;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.HasAriaLabel;
 import com.vaadin.flow.component.HasLabel;
+import com.vaadin.flow.component.HtmlComponent;
+import com.vaadin.flow.component.html.IFrame;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Main;
@@ -108,6 +110,19 @@ public class AccessibilityJavaSourceModifier extends Editor {
         });
     }
 
+    public void setTitle(Integer uiId, Integer nodeId,
+                           String title) {
+        assert uiId != null && nodeId != null && title != null;
+        VaadinSession session = getSession();
+        session.access(() -> {
+            Component component = getComponent(session, uiId, nodeId);
+            if (component instanceof HtmlComponent) {
+                setText(component, title, new TitleVisitor());
+            } else {
+                throw new ThemeEditorException("The component is not an HtmlComponent");
+            }
+        });
+    }
     public void setAltText(Integer uiId, Integer nodeId,
                              String altText) {
         assert uiId != null && nodeId != null && altText != null;
