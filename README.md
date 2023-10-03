@@ -6,7 +6,7 @@ Starting the demo server:
 
 Go to accessibility-checker-for-vaadin-demo and run:
 ```
-mvn jetty:run
+mvn spring-boot:run
 ```
 
 This deploys demo at http://localhost:8080
