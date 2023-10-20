@@ -207,16 +207,24 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
     @state()
     private element: HTMLElement | null = null;
 
+    /** Ignored rule id, preferably to be configured and loaded in the init method **/
+    ignoredRuleId: string[] = ["style_before_after_review"];
+
 
     async runTests() {
         const accessibilityCheckResult = await runAccessibilityCheck(document);
         // Remove passing issues
         accessibilityCheckResult.results = accessibilityCheckResult.results.filter(
             (issues: RuleDetails) => {
+                if (this.ignoredRuleId.includes(issues.ruleId)) {
+                    return false;
+                }
                 return issues.value[1] !== "PASS"
                     && !issues.path.dom.includes("vaadin-dev-tools")
                     && !issues.path.dom.includes("vite-plugin-checker-error-overlay")
-                    && !issues.path.dom.includes("vaadin-connection-indicator");}
+                    && !issues.path.dom.includes("vaadin-connection-indicator")
+                    && !issues.path.dom.includes("iframe");
+            }
         );
         this.report = accessibilityCheckResult.results;
     }

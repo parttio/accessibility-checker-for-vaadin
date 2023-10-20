@@ -28,6 +28,7 @@ public class MainLayout extends Div implements RouterLayout, AfterNavigationObse
         H2 h2 = new H2("Accessibility Help");
         h2.setId("accessibility-help");
         aside = new Aside(h2, iframe);
+        aside.getElement().setAttribute("aria-labelledby", "accessibility-help");
         iframe.getElement().setAttribute("aria-labelledby", "accessibility-help");
         main = new Main();
         mainTitle = new H1("test");
