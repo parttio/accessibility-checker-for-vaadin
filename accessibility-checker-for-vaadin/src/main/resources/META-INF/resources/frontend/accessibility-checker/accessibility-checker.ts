@@ -34,6 +34,9 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         flex-direction: column;
         max-height:50vh;
       }
+      .error-message {
+         color: red;
+       }
         .issue-summary {
             background: #3C3C3C;
             padding: 0.75rem;
@@ -197,6 +200,9 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
 
     @property()
     indexDetail?: number;
+
+    @property()
+    errorMessage?: string;
 
     @state()
     private element: HTMLElement | null = null;
@@ -402,7 +408,10 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         const component = this.getComponentForNode(issue.node);
         return html`
             <div class="detail">
-
+                ${(this.errorMessage) ? html`<div class="result error-message">
+                    <span>${this.errorMessage}</span>
+                        <button class="button" @click="${() => this.clearErrorMessage()}">Clear</button>
+                </div>` : html``}
                 <div class="result detail-header">
                     <h2 class="component">
                         ${component?.element?.tagName ? html`${component.element.tagName}` : html`Global issue`}</h2>
@@ -674,7 +683,16 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
             // Do something
             return true; // Mark the message as handled
         }
+        if (message.command === `${AccessibilityChecker.NAME}-error`) {
+            console.error(message.data.message);
+            this.errorMessage = message.data.message;
+            return true; // Mark the message as handled
+        }
         return false; // The message was not handled
+    }
+
+    clearErrorMessage() {
+        this.errorMessage = undefined;
     }
 }
 

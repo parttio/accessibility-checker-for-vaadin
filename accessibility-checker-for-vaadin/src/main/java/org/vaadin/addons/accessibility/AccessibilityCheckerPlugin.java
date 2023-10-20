@@ -80,34 +80,34 @@ public class AccessibilityCheckerPlugin implements DevToolsMessageHandler {
             int nodeId = (int) data.getNumber(NODE_ID);
             int uiId = (int) data.getNumber(UI_ID);
             String label = data.getString("label");
-            getAccessibilityJavaSourceModifier().setLabel(uiId, nodeId, label);
+            getAccessibilityJavaSourceModifier().setLabel(devToolsInterface, uiId, nodeId, label);
             return true;
         } else if (command.equals(ACCESSIBILITY_CHECKER + "-set-aria-label")) {
             int nodeId = (int) data.getNumber(NODE_ID);
             int uiId = (int) data.getNumber(UI_ID);
             String label = data.getString("label");
-            getAccessibilityJavaSourceModifier().setAriaLabel(uiId, nodeId, label);
+            getAccessibilityJavaSourceModifier().setAriaLabel(devToolsInterface, uiId, nodeId, label);
             return true;
         } else if (command.equals(ACCESSIBILITY_CHECKER + "-set-title")) {
             int nodeId = (int) data.getNumber(NODE_ID);
             int uiId = (int) data.getNumber(UI_ID);
             String value = data.getString("title");
-            getAccessibilityJavaSourceModifier().setTitle(uiId, nodeId, value);
+            getAccessibilityJavaSourceModifier().setTitle(devToolsInterface, uiId, nodeId, value);
             return true;
         } else if (command.equals(ACCESSIBILITY_CHECKER + "-set-alt-text")) {
             int nodeId = (int) data.getNumber(NODE_ID);
             int uiId = (int) data.getNumber(UI_ID);
             String label = data.getString("text");
-            getAccessibilityJavaSourceModifier().setAltText(uiId, nodeId, label);
+            getAccessibilityJavaSourceModifier().setAltText(devToolsInterface, uiId, nodeId, label);
             return true;
         } else if (command.equals(ACCESSIBILITY_CHECKER + "-update-page-title")) {
             int uiId = (int) data.getNumber(UI_ID);
             String label = data.getString("label");
-            getAccessibilityJavaSourceModifier().setPageTitle(uiId, label);
+            getAccessibilityJavaSourceModifier().setPageTitle(devToolsInterface, uiId, label);
             return true;
         } else if (command.equals(ACCESSIBILITY_CHECKER + "-update-route-extends")) {
             int uiId = (int) data.getNumber(UI_ID);
-            getAccessibilityJavaSourceModifier().updateRouteExtends(uiId);
+            getAccessibilityJavaSourceModifier().updateRouteExtends(devToolsInterface,uiId);
             return true;
         }
         return false;
@@ -123,7 +123,11 @@ public class AccessibilityCheckerPlugin implements DevToolsMessageHandler {
 
     private AccessibilityJavaSourceModifier getAccessibilityJavaSourceModifier() {
         if (accessibilityJavaSourceModifier == null) {
-            this.accessibilityJavaSourceModifier = new AccessibilityJavaSourceModifier(VaadinService.getCurrent().getContext());
+            this.accessibilityJavaSourceModifier = new AccessibilityJavaSourceModifier(VaadinService.getCurrent().getContext(), (devToolsInterface, errorMessage) -> {
+                JsonObject object = Json.createObject();
+                object.put("message", errorMessage);
+                devToolsInterface.send(ACCESSIBILITY_CHECKER + "-error", object);
+            });
         }
         return accessibilityJavaSourceModifier;
     }

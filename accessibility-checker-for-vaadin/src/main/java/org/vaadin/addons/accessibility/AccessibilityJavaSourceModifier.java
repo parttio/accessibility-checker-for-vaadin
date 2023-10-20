@@ -32,17 +32,14 @@ import com.github.javaparser.ast.nodeTypes.NodeWithExpression;
 import com.github.javaparser.ast.stmt.ExpressionStmt;
 import com.github.javaparser.ast.stmt.Statement;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
-import com.github.javaparser.printer.lexicalpreservation.LexicalPreservingPrinter;
-import com.github.javaparser.utils.SourceRoot;
+import com.vaadin.base.devserver.DevToolsInterface;
 import com.vaadin.base.devserver.editor.Editor;
 import com.vaadin.base.devserver.editor.Where;
 import com.vaadin.base.devserver.themeeditor.utils.LineNumberVisitor;
-import com.vaadin.base.devserver.themeeditor.utils.ThemeEditorException;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.HasAriaLabel;
 import com.vaadin.flow.component.HasLabel;
 import com.vaadin.flow.component.HtmlComponent;
-import com.vaadin.flow.component.html.IFrame;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Main;
@@ -61,14 +58,18 @@ import org.vaadin.addons.accessibility.visitors.*;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import static com.github.javaparser.StaticJavaParser.*;
 
 public class AccessibilityJavaSourceModifier extends Editor {
 
     private final VaadinContext context;
-    public AccessibilityJavaSourceModifier(VaadinContext context) {
+    private final ErrorHandler errorHandler;
+    public AccessibilityJavaSourceModifier(VaadinContext context, ErrorHandler errorHandler) {
         this.context = context;
+        this.errorHandler = errorHandler;
     }
 
     /**
@@ -82,57 +83,53 @@ public class AccessibilityJavaSourceModifier extends Editor {
      * @param label
      *            className to be set
      */
-    public void setLabel(Integer uiId, Integer nodeId,
-            String label) {
+    public void setLabel(DevToolsInterface devToolsInterface, Integer uiId, Integer nodeId,
+                         String label) {
         assert uiId != null && nodeId != null && label != null;
-        VaadinSession session = getSession();
-        getSession().access(() -> {
+        runAsAccess(devToolsInterface, (session) -> {
             Component component = getComponent(session, uiId, nodeId);
             if (component instanceof HasLabel) {
-                setText(component, label, new LabelVisitor());
+                setText(devToolsInterface, component, label, new LabelVisitor());
             } else {
-                throw new ThemeEditorException("The component does not implement HasLabel");
+                throw new AccessibilityCheckerException( "The component does not implement HasLabel");
             }
         });
     }
 
-    public void setAriaLabel(Integer uiId, Integer nodeId,
+    public void setAriaLabel(DevToolsInterface devToolsInterface, Integer uiId, Integer nodeId,
             String label) {
         assert uiId != null && nodeId != null && label != null;
-        VaadinSession session = getSession();
-        session.access(() -> {
+        runAsAccess(devToolsInterface, (session) -> {
             Component component = getComponent(session, uiId, nodeId);
             if (component instanceof HasAriaLabel) {
-                setText(component, label, new AriaLabelVisitor());
+                setText(devToolsInterface, component, label, new AriaLabelVisitor());
             } else {
-                throw new ThemeEditorException("The component does not implement HasAriaLabel");
+                throw new AccessibilityCheckerException( "The component does not implement HasAriaLabel");
             }
         });
     }
 
-    public void setTitle(Integer uiId, Integer nodeId,
+    public void setTitle(DevToolsInterface devToolsInterface, Integer uiId, Integer nodeId,
                            String title) {
         assert uiId != null && nodeId != null && title != null;
-        VaadinSession session = getSession();
-        session.access(() -> {
+        runAsAccess(devToolsInterface, (session) -> {
             Component component = getComponent(session, uiId, nodeId);
             if (component instanceof HtmlComponent) {
-                setText(component, title, new TitleVisitor());
+                setText(devToolsInterface, component, title, new TitleVisitor());
             } else {
-                throw new ThemeEditorException("The component is not an HtmlComponent");
+                throw new AccessibilityCheckerException("The component is not an HtmlComponent");
             }
         });
     }
-    public void setAltText(Integer uiId, Integer nodeId,
+    public void setAltText(DevToolsInterface devToolsInterface, Integer uiId, Integer nodeId,
                              String altText) {
         assert uiId != null && nodeId != null && altText != null;
-        VaadinSession session = getSession();
-        session.access(() -> {
+        runAsAccess(devToolsInterface, (session) -> {
             Component component = getComponent(session, uiId, nodeId);
             if (component instanceof Image) {
-                setText(component, altText, new AltTextVisitor());
+                setText(devToolsInterface, component, altText, new AltTextVisitor());
             } else {
-                throw new ThemeEditorException("The component is not an image");
+                throw new AccessibilityCheckerException("The component is not an image");
             }
         });
     }
@@ -161,89 +158,98 @@ public class AccessibilityJavaSourceModifier extends Editor {
         return builder.toString();
     }
 
-    public void setPageTitle(Integer uiId, String pageTitle) {
+    public void setPageTitle(DevToolsInterface devToolsInterface, Integer uiId, String pageTitle) {
         assert uiId != null && pageTitle != null;
-        VaadinSession session = getSession();
-        session.access(() -> {
+        runAsAccess(devToolsInterface, (session) -> {
             Component currentView = session.getUIById(uiId).getCurrentView();
-            try {
-                List<Modification> modifications = new ArrayList<>();
-                ComponentTracker.Location createLocation = getCreateLocation(
-                        currentView);
-                File sourceFile = getSourceFile(createLocation);
-                int sourceOffset = modifyClass(sourceFile, cu -> {
+            List<Modification> modifications = new ArrayList<>();
+            ComponentTracker.Location createLocation = getCreateLocation(
+                    currentView);
+            File sourceFile = getSourceFile(createLocation);
+            int sourceOffset = modifyClass(sourceFile, cu -> {
 
-                    Optional<ClassOrInterfaceDeclaration> classOrInterfaceDeclaration = cu.getClassByName(currentView.getClass().getSimpleName());
-                    classOrInterfaceDeclaration.ifPresent(node -> {
-                        SingleMemberAnnotationExpr normalAnnotationExpr = new SingleMemberAnnotationExpr(
-                                parseName(PageTitle.class.getSimpleName()),
-                                parseExpression(escapeForJava(pageTitle, true))
-                        );
+                Optional<ClassOrInterfaceDeclaration> classOrInterfaceDeclaration = cu.getClassByName(currentView.getClass().getSimpleName());
+                classOrInterfaceDeclaration.ifPresent(node -> {
+                    Name name = parseName(PageTitle.class.getSimpleName());
+                    Optional<AnnotationExpr> pageTitleAnnotationOptional = node.getAnnotations().stream().filter(expr -> name.equals(expr.getName())).findFirst();
+                    SingleMemberAnnotationExpr normalAnnotationExpr = new SingleMemberAnnotationExpr(
+                            name,
+                            parseExpression(escapeForJava(pageTitle, true))
+                    );
+                    if (pageTitleAnnotationOptional.isPresent()) {
+                        getLogger().debug("update the page title {}", pageTitle);
+                        modifications.add(Modification.remove(pageTitleAnnotationOptional.get()));
                         node.addAnnotation(normalAnnotationExpr);
                         modifications.add(Modification.insertLineBefore(node, normalAnnotationExpr));
-                    });
-                    return modifications;
+                    } else {
+                        getLogger().debug("insert the page title {}", pageTitle);
+
+                        node.addAnnotation(normalAnnotationExpr);
+                        modifications.add(Modification.insertLineBefore(node, normalAnnotationExpr));
+                    }
                 });
+                return modifications;
+            });
 
-                if (sourceOffset != 0) {
-                    ComponentTracker.refreshLocation(createLocation, sourceOffset);
-                }
-
-            } catch (UnsupportedOperationException ex) {
-                throw new ThemeEditorException(ex);
+            if (sourceOffset != 0) {
+                ComponentTracker.refreshLocation(createLocation, sourceOffset);
             }
         });
     }
 
-    public void updateRouteExtends(Integer uiId) {
+    public void updateRouteExtends(DevToolsInterface devToolsInterface, Integer uiId) {
         assert uiId != null;
-        VaadinSession session = getSession();
-        session.access(() -> {
+        runAsAccess(devToolsInterface, (session) -> {
             Component currentView = session.getUIById(uiId).getCurrentView();
-            try {
-                List<Modification> modifications = new ArrayList<>();
-                ComponentTracker.Location createLocation = getCreateLocation(
-                        currentView);
-                File sourceFile = getSourceFile(createLocation);
-                int sourceOffset = modifyClass(sourceFile, cu -> {
+            List<Modification> modifications = new ArrayList<>();
+            ComponentTracker.Location createLocation = getCreateLocation(
+                    currentView);
+            File sourceFile = getSourceFile(createLocation);
+            int sourceOffset = modifyClass(sourceFile, cu -> {
 
-                    Optional<ClassOrInterfaceDeclaration> classOrInterfaceDeclaration = cu.getClassByName(currentView.getClass().getSimpleName());
-                    classOrInterfaceDeclaration.ifPresent(node -> {
-                        Optional<ClassOrInterfaceType> optionalClassOrInterfaceType = node.getExtendedTypes().stream()
-                                .filter(t -> {
-                                    String simpleName = t.getNameAsString();
-                                    return simpleName.equals(VerticalLayout.class.getSimpleName())
-                                            || simpleName.equals(HorizontalLayout.class.getSimpleName())
-                                            || simpleName.equals(Div.class.getSimpleName());
-                                }).findFirst();
-                        if (optionalClassOrInterfaceType.isPresent()) {
-                            ClassOrInterfaceType extendedTypes = optionalClassOrInterfaceType.get();
-                            ClassOrInterfaceType newNode = parseClassOrInterfaceType(Main.class.getSimpleName());
-                            modifications.add(Modification.addImport(cu, new ImportDeclaration(Main.class.getName(), false, false)));
-                            modifications.add(Modification.replace(extendedTypes, newNode));
-                        } else {
-                            // add role main in the constructor getElement().setAttribute("role", "main");
-                            ConstructorDeclaration constructorDeclaration = cu.accept(new ConstructorVisitor(), null);
-                            Statement staticStatement = StaticJavaParser.parseStatement("getElement().setAttribute(\"role\", \"main\");");
-                            modifications.add(Modification.insertAtEndOfBlock(constructorDeclaration, staticStatement));
-                        }
-                    });
-                    return modifications;
+                Optional<ClassOrInterfaceDeclaration> classOrInterfaceDeclaration = cu.getClassByName(currentView.getClass().getSimpleName());
+                classOrInterfaceDeclaration.ifPresent(node -> {
+                    Optional<ClassOrInterfaceType> optionalClassOrInterfaceType = node.getExtendedTypes().stream()
+                            .filter(t -> {
+                                String simpleName = t.getNameAsString();
+                                return simpleName.equals(VerticalLayout.class.getSimpleName())
+                                        || simpleName.equals(HorizontalLayout.class.getSimpleName())
+                                        || simpleName.equals(Div.class.getSimpleName());
+                            }).findFirst();
+                    if (optionalClassOrInterfaceType.isPresent()) {
+                        ClassOrInterfaceType extendedTypes = optionalClassOrInterfaceType.get();
+                        ClassOrInterfaceType newNode = parseClassOrInterfaceType(Main.class.getSimpleName());
+                        modifications.add(Modification.addImport(cu, new ImportDeclaration(Main.class.getName(), false, false)));
+                        modifications.add(Modification.replace(extendedTypes, newNode));
+                    } else {
+                        // add role main in the constructor getElement().setAttribute("role", "main");
+                        ConstructorDeclaration constructorDeclaration = cu.accept(new ConstructorVisitor(), null);
+                        Statement staticStatement = StaticJavaParser.parseStatement("getElement().setAttribute(\"role\", \"main\");");
+                        modifications.add(Modification.insertAtEndOfBlock(constructorDeclaration, staticStatement));
+                    }
                 });
+                return modifications;
+            });
 
-                if (sourceOffset != 0) {
-                    ComponentTracker.refreshLocation(createLocation, sourceOffset);
-                }
-
-            } catch (UnsupportedOperationException ex) {
-                throw new ThemeEditorException(ex);
+            if (sourceOffset != 0) {
+                ComponentTracker.refreshLocation(createLocation, sourceOffset);
             }
         });
     }
 
+private void runAsAccess(DevToolsInterface devToolsInterface, Consumer<VaadinSession> runnable) {
+    VaadinSession session = getSession();
+    session.access(() -> {
+        try {
+            runnable.accept(session);
+        } catch (Exception ex) {
+            getLogger().error("Error during the execution", ex);
+            errorHandler.sendError(devToolsInterface, ex.getMessage());
+        }
+    });
+}
 
-
-    protected void setText(Component component, String text, GenericStringVisitor visitor) {
+    protected void setText(DevToolsInterface devToolsInterface, Component component, String text, GenericStringVisitor visitor) {
         try {
             ComponentTracker.Location createLocation = getCreateLocation(
                     component);
@@ -273,15 +279,15 @@ public class AccessibilityJavaSourceModifier extends Editor {
                 ComponentTracker.refreshLocation(createLocation, sourceOffset);
             }
 
-        } catch (UnsupportedOperationException ex) {
-            throw new ThemeEditorException(ex);
+        } catch (UnsupportedOperationException | AccessibilityCheckerException ex) {
+            errorHandler.sendError(devToolsInterface, ex.getMessage());
         }
     }
 
     protected ComponentTracker.Location getCreateLocation(Component c) {
         ComponentTracker.Location location = ComponentTracker.findCreate(c);
         if (location == null) {
-            throw new ThemeEditorException(
+            throw new AccessibilityCheckerException(
                     "Unable to find the location where the component "
                             + c.getClass().getName() + " was created");
         }
@@ -327,11 +333,11 @@ public class AccessibilityJavaSourceModifier extends Editor {
     }
 
     protected Component getComponent(VaadinSession session, int uiId,
-            int nodeId) {
+                                     int nodeId) {
         Element element = session.findElement(uiId, nodeId);
         Optional<Component> c = element.getComponent();
         if (!c.isPresent()) {
-            throw new ThemeEditorException(
+            throw new AccessibilityCheckerException(
                     "Only component locations are tracked. The given node id refers to an element and not a component.");
         }
         return c.get();
@@ -357,7 +363,7 @@ public class AccessibilityJavaSourceModifier extends Editor {
                         || expr.getExpression().isVariableDeclarationExpr())) {
             return Where.AFTER;
         }
-        throw new ThemeEditorException("Cannot apply classname for " + node);
+        throw new AccessibilityCheckerException("Cannot apply classname for " + node);
     }
 
     protected Node findNode(CompilationUnit cu, Component component) {
@@ -365,7 +371,7 @@ public class AccessibilityJavaSourceModifier extends Editor {
         Node node = cu.accept(new LineNumberVisitor(),
                 createLocation.lineNumber());
         if (node == null) {
-            throw new ThemeEditorException("Cannot find component.");
+            throw new AccessibilityCheckerException("Cannot find component.");
         }
         return node;
     }
@@ -374,4 +380,8 @@ public class AccessibilityJavaSourceModifier extends Editor {
         return LoggerFactory.getLogger(AccessibilityJavaSourceModifier.class);
     }
 
+
+    public static interface ErrorHandler {
+         void sendError(DevToolsInterface devToolsInterface, String errorMessage);
+    }
 }
