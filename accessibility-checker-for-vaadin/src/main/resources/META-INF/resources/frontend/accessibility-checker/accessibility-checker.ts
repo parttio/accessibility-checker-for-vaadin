@@ -216,11 +216,11 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
     }
 
     openIde(node:Node) {
-        const element = node.parentElement;
-        const componentList = getComponents(element!);
-        const component = componentList[componentList.length - 1];
-        const serializableComponentRef: ComponentReference = { nodeId: component.nodeId, uiId: component.uiId };
-        devTools.send(`${AccessibilityChecker.NAME}-show-component-creation-location`, serializableComponentRef);
+        const component = this.getComponentForNode(node);
+        if (component !== undefined) {
+            const serializableComponentRef: ComponentReference = {nodeId: component.nodeId, uiId: component.uiId};
+            devTools.send(`${AccessibilityChecker.NAME}-show-component-creation-location`, serializableComponentRef);
+        }
     }
 
     backToList() {
