@@ -28,8 +28,12 @@ public class MainLayout extends Div implements RouterLayout, AfterNavigationObse
         H2 h2 = new H2("Accessibility Help");
         h2.setId("accessibility-help");
         aside = new Aside(h2, iframe);
+        // See https://github.com/vaadin/flow/issues/17876
         aside.getElement().setAttribute("aria-labelledby", "accessibility-help");
         iframe.getElement().setAttribute("aria-labelledby", "accessibility-help");
+        // The title is added because of this bug: https://github.com/IBMa/equal-access/issues/918
+        // the title is not required if there is an aria-label or aria-labelledby https://www.w3.org/WAI/standards-guidelines/act/rules/cae760/proposed/#passed
+        iframe.setTitle("Accessibility Help");
         main = new Main();
         mainTitle = new H1("test");
         main.add(new Header(mainTitle));

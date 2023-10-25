@@ -59,7 +59,6 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 import static com.github.javaparser.StaticJavaParser.*;
 
@@ -89,7 +88,7 @@ public class AccessibilityJavaSourceModifier extends Editor {
         runAsAccess(devToolsInterface, (session) -> {
             Component component = getComponent(session, uiId, nodeId);
             if (component instanceof HasLabel) {
-                setText(devToolsInterface, component, label, new LabelVisitor());
+                setText(component, label, new LabelVisitor());
             } else {
                 throw new AccessibilityCheckerException( "The component does not implement HasLabel");
             }
@@ -102,7 +101,7 @@ public class AccessibilityJavaSourceModifier extends Editor {
         runAsAccess(devToolsInterface, (session) -> {
             Component component = getComponent(session, uiId, nodeId);
             if (component instanceof HasAriaLabel) {
-                setText(devToolsInterface, component, label, new AriaLabelVisitor());
+                setText(component, label, new AriaLabelVisitor());
             } else {
                 throw new AccessibilityCheckerException( "The component does not implement HasAriaLabel");
             }
@@ -115,7 +114,7 @@ public class AccessibilityJavaSourceModifier extends Editor {
         runAsAccess(devToolsInterface, (session) -> {
             Component component = getComponent(session, uiId, nodeId);
             if (component instanceof HtmlComponent) {
-                setText(devToolsInterface, component, title, new TitleVisitor());
+                setText(component, title, new TitleVisitor());
             } else {
                 throw new AccessibilityCheckerException("The component is not an HtmlComponent");
             }
@@ -127,7 +126,7 @@ public class AccessibilityJavaSourceModifier extends Editor {
         runAsAccess(devToolsInterface, (session) -> {
             Component component = getComponent(session, uiId, nodeId);
             if (component instanceof Image) {
-                setText(devToolsInterface, component, altText, new AltTextVisitor());
+                setText(component, altText, new AltTextVisitor());
             } else {
                 throw new AccessibilityCheckerException("The component is not an image");
             }
@@ -249,38 +248,33 @@ private void runAsAccess(DevToolsInterface devToolsInterface, Consumer<VaadinSes
     });
 }
 
-    protected void setText(DevToolsInterface devToolsInterface, Component component, String text, GenericStringVisitor visitor) {
-        try {
-            ComponentTracker.Location createLocation = getCreateLocation(
-                    component);
-            File sourceFile = getSourceFile(createLocation);
-            int sourceOffset = modifyClass(sourceFile, cu -> {
-                SimpleName scope = findLocalVariableOrField(cu,
-                        createLocation.lineNumber());
-                Node newNode = createAddStatement(scope, text, visitor);
-                Modification mod;
-                ExpressionStmt stmt = findStmt(cu, component, visitor);
-                if (stmt == null) {
-                    Node node = findNode(cu, component);
-                    Where where = findModificationWhere(cu, component);
-                    mod = switch (where) {
-                    case AFTER -> Modification.insertLineAfter(node, newNode);
-                    case INSIDE ->
-                        Modification.insertAtEndOfBlock(node, newNode);
-                    case BEFORE -> Modification.insertLineBefore(node, newNode);
-                    };
-                } else {
-                    mod = Modification.replace(stmt, newNode);
-                }
-                return Collections.singletonList(mod);
-            });
-
-            if (sourceOffset != 0) {
-                ComponentTracker.refreshLocation(createLocation, sourceOffset);
+    protected void setText(Component component, String text, GenericStringVisitor visitor) {
+        ComponentTracker.Location createLocation = getCreateLocation(
+                component);
+        File sourceFile = getSourceFile(createLocation);
+        int sourceOffset = modifyClass(sourceFile, cu -> {
+            SimpleName scope = findLocalVariableOrField(cu,
+                    createLocation.lineNumber());
+            Node newNode = createAddStatement(scope, text, visitor);
+            Modification mod;
+            ExpressionStmt stmt = findStmt(cu, component, visitor);
+            if (stmt == null) {
+                Node node = findNode(cu, component);
+                Where where = findModificationWhere(cu, component);
+                mod = switch (where) {
+                case AFTER -> Modification.insertLineAfter(node, newNode);
+                case INSIDE ->
+                    Modification.insertAtEndOfBlock(node, newNode);
+                case BEFORE -> Modification.insertLineBefore(node, newNode);
+                };
+            } else {
+                mod = Modification.replace(stmt, newNode);
             }
+            return Collections.singletonList(mod);
+        });
 
-        } catch (UnsupportedOperationException | AccessibilityCheckerException ex) {
-            errorHandler.sendError(devToolsInterface, ex.getMessage());
+        if (sourceOffset != 0) {
+            ComponentTracker.refreshLocation(createLocation, sourceOffset);
         }
     }
 
