@@ -110,6 +110,12 @@
             <version>6.0.0</version>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>com.vaadin</groupId>
+            <artifactId>flow-test-util</artifactId>
+            <version>${vaadin.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

@@ -1,7 +1,13 @@
 import {html, css, LitElement, nothing} from 'lit';
 import {customElement, property, state} from 'lit/decorators.js';
 
-import {eRulePolicy, RuleDetails} from "accessibility-checker/lib/api/IEngine";
+import {
+    eRuleCategory,
+    eRuleConfidence,
+    eRuleLevel,
+    eRulePolicy,
+    RuleDetails
+} from "accessibility-checker/lib/api/IEngine";
 // @ts-ignore
 import {runAccessibilityCheck} from "./accessibility-checker-lib.js";
 import {ComponentReference, getComponents} from "./copy-component-util";
@@ -35,44 +41,44 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         max-height:50vh;
       }
       .error-message {
-         color: red;
-       }
-        .issue-summary {
-            background: #3C3C3C;
-            padding: 0.75rem;
-            position: sticky;
-            top: -0.75rem;
-            z-index: 1;
-        }
+        color: red;
+      }
+      .issue-summary {
+        background: #3C3C3C;
+        padding: 0.75rem;
+        position: sticky;
+        top: -0.75rem;
+        z-index: 1;
+      }
 
-        .icon {
-            width: 14px;
-            height: 14px;
-            margin-right: 0.2rem;
-        }
+      .icon {
+        width: 14px;
+        height: 14px;
+        margin-right: 0.2rem;
+      }
 
-        .issue-summary > span {
-            display: inline-flex;
-            align-items: center;
-            margin-right: 0.5rem;
-            vertical-align: middle;
-            margin-bottom: 0.5rem;
-        }
+      .issue-summary > span {
+        display: inline-flex;
+        align-items: center;
+        margin-right: 0.5rem;
+        vertical-align: middle;
+        margin-bottom: 0.5rem;
+      }
 
-        .result-list {
-            list-style-type: none;
-            margin: 0;
-            padding: 0;
-            overflow: auto;
-        }
+      .result-list {
+        list-style-type: none;
+        margin: 0;
+        padding: 0;
+        overflow: auto;
+      }
 
-        .result {
-            border-bottom: 1px solid #3C3C3C;
-            padding: 0.75rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
+      .result {
+        border-bottom: 1px solid #3C3C3C;
+        padding: 0.75rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
       .section {
         border-bottom: 1px solid #3C3C3C;
         padding: 0.75rem;
@@ -80,84 +86,84 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         justify-content: space-between;
         flex-direction: column;
       }
-        .result:hover {
-            cursor: pointer;
-            background: rgba(0,0,0,0.1);
-            transition: background 0.2s;
-        }
+      .result:hover {
+        cursor: pointer;
+        background: rgba(0,0,0,0.1);
+        transition: background 0.2s;
+      }
 
-        .detail-header {
-            padding-top: 0;
-            justify-content: space-between;
-            gap: 10px;
-        }
+      .detail-header {
+        padding-top: 0;
+        justify-content: space-between;
+        gap: 10px;
+      }
 
-        .result .text {
-            margin: 0;
-            display: flex;
-            flex-direction: column;
-            flex: 1 1 auto;
-            padding-right: 1rem;
-        }
+      .result .text {
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 auto;
+        padding-right: 1rem;
+      }
 
-        .result .component:not(:empty) {
-            text-transform: lowercase;
-            opacity: 0.7;
-            margin-bottom: 0.5rem;
-        }
+      .result .component:not(:empty) {
+        text-transform: lowercase;
+        opacity: 0.7;
+        margin-bottom: 0.5rem;
+      }
 
-        .warning-message {
-            display: flex;
-            line-height: 1.2;
-        }
+      .warning-message {
+        display: flex;
+        line-height: 1.2;
+      }
 
-        .warning-message .icon {
-            flex-shrink: 0;
-            width: 14px;
-            height: 14px;
-            margin-right: 0.5rem;
-        }
+      .warning-message .icon {
+        flex-shrink: 0;
+        width: 14px;
+        height: 14px;
+        margin-right: 0.5rem;
+      }
 
-        .result .arrow {
-            flex-shrink: 0;
-        }
-        button:focus-visible {
-          outline: -webkit-focus-ring-color auto 1px;
-        }
-        .button {
-            all: initial;
-            font-family: inherit;
-            font-size: var(--dev-tools-text-color-active);
-            line-height: 1;
-            white-space: nowrap;
-            background-color: rgba(255, 255, 255, 0.12);
-            color: var(--dev-tools-text-color);
-            font-weight: 600;
-            padding: 0.25rem 0.375rem;
-            border-radius: 0.25rem;
-            cursor: pointer;
-        }
+      .result .arrow {
+        flex-shrink: 0;
+      }
+      button:focus-visible {
+        outline: -webkit-focus-ring-color auto 1px;
+      }
+      .button {
+        all: initial;
+        font-family: inherit;
+        font-size: var(--dev-tools-text-color-active);
+        line-height: 1;
+        white-space: nowrap;
+        background-color: rgba(255, 255, 255, 0.12);
+        color: var(--dev-tools-text-color);
+        font-weight: 600;
+        padding: 0.25rem 0.375rem;
+        border-radius: 0.25rem;
+        cursor: pointer;
+      }
 
-        .text-field {
-            background: #3C3C3C;
-            border: none;
-            padding: 0.2rem;
-            border-radius: 4px;
-          color: var(--dev-tools-text-color-active);
-        }
+      .text-field {
+        background: #3C3C3C;
+        border: none;
+        padding: 0.2rem;
+        border-radius: 4px;
+        color: var(--dev-tools-text-color-active);
+      }
 
-        h3.small-heading {
-          opacity: 0.7;
-          font-weight: normal;
-          font-size: var(--dev-tools-font-size);
-          margin-top: 0;
-        }
-      
-        .detail h2.component:not(:empty) {
-          text-transform: lowercase;
-          font-size: var(--dev-tools-font-size);
-          flex-grow: 1;
-        }
+      h3.small-heading {
+        opacity: 0.7;
+        font-weight: normal;
+        font-size: var(--dev-tools-font-size);
+        margin-top: 0;
+      }
+
+      .detail h2.component:not(:empty) {
+        text-transform: lowercase;
+        font-size: var(--dev-tools-font-size);
+        flex-grow: 1;
+      }
 
       .nav-button {
         all: initial;
@@ -207,25 +213,35 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
     @state()
     private element: HTMLElement | null = null;
 
+    private debugMode = true;
+
     /** Ignored rule id, preferably to be configured and loaded in the init method **/
-    ignoredRuleId: string[] = ["style_before_after_review"];
+    ignoredRules: IgnoredRule[] = [
+        {htmlTag: "vaadin-dev-tools"},
+        {htmlTag: "vite-plugin-checker-error-overlay"},
+        {htmlTag: "vaadin-connection-indicator"},
+        {htmlTag: "iframe", lastTag: false},
+        {ruleId: "style_before_after_review"},
+        {ruleId: "style_highcontrast_visible"},
+        {ruleId: "style_color_misuse", htmlTag: "style"}
+    ];
 
 
     async runTests() {
         const accessibilityCheckResult = await runAccessibilityCheck(document);
+        const start = new Date().getTime();
         // Remove passing issues
         accessibilityCheckResult.results = accessibilityCheckResult.results.filter(
-            (issues: RuleDetails) => {
-                if (this.ignoredRuleId.includes(issues.ruleId)) {
-                    return false;
-                }
-                return issues.value[1] !== "PASS"
-                    && !issues.path.dom.includes("vaadin-dev-tools")
-                    && !issues.path.dom.includes("vite-plugin-checker-error-overlay")
-                    && !issues.path.dom.includes("vaadin-connection-indicator")
-                    && !issues.path.dom.includes("iframe");
+            (issue: RuleDetails) => {
+                return this.validateRuleDetails(issue);
             }
         );
+        const duration = new Date().getTime() - start;
+        if (duration > 500) {
+            console.error(`Time elapsed ${duration / 1000}s`);
+        } else {
+            console.debug(`Time elapsed ${duration / 1000}s`);
+        }
         this.report = accessibilityCheckResult.results;
     }
 
@@ -312,43 +328,41 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
             }
         } else {
             return html`
-            ${this.report
+                ${this.report
                 ? html`<div class="container">
-                  <div class="issue-summary">
-                      <span>
-                        ${this.report.length} issues
-                      </span>
-
-                      <span>
-                          ${this.getIcon(eRulePolicy.VIOLATION)}
-                          ${this.report.filter((issues: any) => issues.value[0] == eRulePolicy.VIOLATION).length}
-                          violations
-                      </span>
-                      <span>
-                          ${this.getIcon(eRulePolicy.INFORMATION)}
-                           ${this.report.filter((issues: any) => issues.value[0] == eRulePolicy.INFORMATION).length}
-                          need review
-                      </span>
-                      <span>
-                          ${this.getIcon(eRulePolicy.RECOMMENDATION)}
-                          ${this.report.filter((issues: any) => issues.value[0] == eRulePolicy.RECOMMENDATION).length}
-                          recommendations
-                      </span>
-
-
-                      <button class="button" @click=${this.runTests}>Re-run Check</button>
-                  </div>
-                  <ul class="result-list">
-                      ${this.report.map((item, index) => this.renderItem(item, index))}
-                  </ul>
-                    </div>
-            `
+                            <div class="issue-summary">
+                              <span>
+                                ${this.report.length} issues
+                              </span>
+        
+                              <span>
+                                  ${this.getIcon(eRuleIcon.VIOLATION)}
+                                  ${this.report.filter((issues: RuleDetails) => this.getRuleIcon(issues.value[0],issues.value[1]) == eRuleIcon.VIOLATION).length}
+                                  violations
+                              </span>
+                                        <span>
+                                  ${this.getIcon(eRuleIcon.NEED_REVIEW)}
+                                   ${this.report.filter((issues: RuleDetails) => this.getRuleIcon(issues.value[0],issues.value[1]) == eRuleIcon.NEED_REVIEW).length}
+                                  need review
+                              </span>
+                                        <span>
+                                  ${this.getIcon(eRuleIcon.RECOMMENDATION)}
+                                  ${this.report.filter((issues: RuleDetails) => this.getRuleIcon(issues.value[0],issues.value[1]) == eRuleIcon.RECOMMENDATION).length}
+                                  recommendations
+                              </span>
+                              <button class="button" @click=${this.runTests}>Re-run Check</button>
+                            </div>
+                            <ul class="result-list">
+                                ${this.report.map((item, index) => this.renderItem(item, index))}
+                            </ul>
+                        </div>
+                        `
                 : html`<div class="issue-summary">
-                        Click "Run check" to start the accessibility assessment.
-                        <button class="button" @click=${this.runTests}>Run Check</button>
-                    </div>
-                    `}
-        `;
+                            Click "Run check" to start the accessibility assessment.
+                            <button class="button" @click=${this.runTests}>Run Check</button>
+                        </div>
+                        `}
+            `;
 
         }
     }
@@ -368,7 +382,7 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
             <p class="text">
                 <span class="component">${component?.element?.tagName}</span>
                 <span class="warning-message">
-                    ${this.getIcon(issue.value[0])}  ${issue.message}
+                    ${this.getIcon(this.getRuleIcon(issue.value[0], issue.value[1]))}  ${issue.message}
                 </span>
             </p>
             ${this.getDetailsIcon()}
@@ -413,12 +427,15 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         return -1;
     }
     renderDetail(issue:RuleDetails) {
+        if (this.debugMode) {
+            console.debug("Full Issue ", issue);
+        }
         const component = this.getComponentForNode(issue.node);
         return html`
             <div class="detail">
                 ${(this.errorMessage) ? html`<div class="result error-message">
                     <span>${this.errorMessage}</span>
-                        <button class="button" @click="${() => this.clearErrorMessage()}">Clear</button>
+                    <button class="button" @click="${() => this.clearErrorMessage()}">Clear</button>
                 </div>` : html``}
                 <div class="result detail-header">
                     <h2 class="component">
@@ -447,7 +464,7 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
                         ${component.element.tagName}</h3>` : html``}
 
                     <span class="warning-message">
-                        ${this.getIcon(issue.value[0])}
+                        ${this.getIcon(this.getRuleIcon(issue.value[0], issue.value[1]))}
                         <span>
                             ${issue.message}
                         </span>
@@ -455,14 +472,14 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
                 </div>
 
                 ${(this.generateVaadinDetails(issue))
-                }
+        }
 
                 <div class="section">
                     <h3 class="small-heading">Help <a
                             href="frontend/accessibility-checker/help/en-US/${issue.ruleId}.html"
                             target="_blank">More details</a></h3>
 
-                    <iframe src="frontend/accessibility-checker/help/en-US/${issue.ruleId}.html"></iframe>
+                    <iframe src="frontend/accessibility-checker/help/en-US/${issue.ruleId}.html" title="Help"></iframe>
                 </div>
 
                 <div class="section">
@@ -537,28 +554,41 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         return nothing;
     }
 
+    private getRuleIcon(rulePolicy: eRulePolicy, ruleConfidence: eRuleConfidence) {
+        if (rulePolicy == eRulePolicy.VIOLATION && ruleConfidence == eRuleConfidence.FAIL) {
+            return eRuleIcon.VIOLATION;
+        }
+        if (ruleConfidence !== eRuleConfidence.FAIL) {
+            return eRuleIcon.NEED_REVIEW;
+        }
+        return eRuleIcon.RECOMMENDATION
+
+    }
+
     /**
      * Generate an icon based on the type of the issue
-     * @param issuePolicy
+     * @param ruleLevel
      * @private
      */
-    private getIcon(issuePolicy: eRulePolicy) {
-        switch (issuePolicy) {
-            case eRulePolicy.VIOLATION:
+    private getIcon(rulePolicy: eRuleIcon) {
+        switch (rulePolicy) {
+            case eRuleIcon.VIOLATION:
                 return html`
-                        <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
-                            <path d="M10 0C4.5 0 0 4.5 0 10C0 15.5 4.5 20 10 20C15.5 20 20 15.5 20 10C20 4.5 15.5 0 10 0ZM15.25 13.5L13.5 15.25L10 11.75L6.5 15.25L4.75 13.5L8.25 10L4.75 6.5L6.5 4.75L10 8.25L13.5 4.75L15.25 6.5L11.75 10L15.25 13.5Z" fill="#FF3A49"/>
-                        </svg>`;
-            case eRulePolicy.RECOMMENDATION:
+                    <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M10 0C4.5 0 0 4.5 0 10C0 15.5 4.5 20 10 20C15.5 20 20 15.5 20 10C20 4.5 15.5 0 10 0ZM15.25 13.5L13.5 15.25L10 11.75L6.5 15.25L4.75 13.5L8.25 10L4.75 6.5L6.5 4.75L10 8.25L13.5 4.75L15.25 6.5L11.75 10L15.25 13.5Z" fill="#FF3A49"/>
+                    </svg>`;
+            case eRuleIcon.NEED_REVIEW:
                 return html`
-            <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="20" height="18" viewBox="0 0 20 18" fill="none">
-            <path d="M10 0.25L0 17.75H20L10 0.25ZM10 15.25C9.25 15.25 8.75 14.75 8.75 14C8.75 13.25 9.25 12.75 10 12.75C10.75 12.75 11.25 13.25 11.25 14C11.25 14.75 10.75 15.25 10 15.25ZM8.75 11.5V6.5H11.25V11.5H8.75Z" fill="#FFDB7D"/>
-            </svg>`;
-            case eRulePolicy.INFORMATION:
+                    <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="20" height="18" viewBox="0 0 20 18" fill="none">
+                        <path d="M10 0.25L0 17.75H20L10 0.25ZM10 15.25C9.25 15.25 8.75 14.75 8.75 14C8.75 13.25 9.25 12.75 10 12.75C10.75 12.75 11.25 13.25 11.25 14C11.25 14.75 10.75 15.25 10 15.25ZM8.75 11.5V6.5H11.25V11.5H8.75Z" fill="#FFDB7D"/>
+                    </svg>`;
+            case eRuleIcon.RECOMMENDATION:
                 return html`
-            <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <path d="M10 0C4.5 0 0 4.5 0 10C0 15.5 4.5 20 10 20C15.5 20 20 15.5 20 10C20 4.5 15.5 0 10 0ZM11.25 16.25H8.75V7.5H11.25V16.25ZM11.25 6.25H8.75V3.75H11.25V6.25Z" fill="#57A1F8"/>
-            </svg>`;
+                    <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M10 0C4.5 0 0 4.5 0 10C0 15.5 4.5 20 10 20C15.5 20 20 15.5 20 10C20 4.5 15.5 0 10 0ZM11.25 16.25H8.75V7.5H11.25V16.25ZM11.25 6.25H8.75V3.75H11.25V6.25Z" fill="#57A1F8"/>
+                    </svg>`;
+            default:
+                return html``;
         }
     }
 
@@ -702,9 +732,67 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
     clearErrorMessage() {
         this.errorMessage = undefined;
     }
+
+    /**
+     * Apply all the ignoring rules to the issue, if one is matching then return false
+     * @param issue
+     * @private
+     */
+    private validateRuleDetails(issue: RuleDetails) {
+        if (issue.value[1] == "PASS") {
+            return false;
+        }
+
+        for (let ignoredRule of this.ignoredRules) {
+            const ignoredRuleId = (ignoredRule.ruleId == undefined) || (ignoredRule.ruleId == issue.ruleId);
+            if (ignoredRuleId) {
+                if (ignoredRule.htmlTag == undefined) {
+                    // rule ignored and no more rule is applying
+                    return false;
+                }
+                // it fits, check next
+                if (ignoredRule.lastTag == undefined) {
+                    const ignoredRuleHtmlTag = (issue.path.dom.includes(ignoredRule.htmlTag));
+                    if (ignoredRuleHtmlTag) {
+                        // console.debug("1 ignoredRuleHtmlTag for {} RULE: {}", issue, ignoredRule);
+                        return false; //
+                    } // else check the next rule
+                } else if (ignoredRule.lastTag) {
+                    const ignoredRuleHtmlTag = ((issue.path.dom.includes(ignoredRule.htmlTag)) && (((issue.node  as HTMLElement).tagName === ignoredRule.htmlTag.toUpperCase())));
+                    if (ignoredRuleHtmlTag) {
+                        // console.debug("2 ignoredRuleHtmlTag for {} RULE: {}", issue, ignoredRule);
+                        return false; //
+                    } // else check the next rule
+                } else {
+                    const ignoredRuleHtmlTag = ((issue.path.dom.includes(ignoredRule.htmlTag)) && ((issue.node  as HTMLElement).tagName !== ignoredRule.htmlTag.toUpperCase()));
+                    if (ignoredRuleHtmlTag) {
+                        // console.debug("3 ignoredRuleHtmlTag for {} RULE: {}", issue, ignoredRule);
+                        return false; //
+                    } // else check the next rule
+                }
+            }
+        }
+        return true;
+    }
 }
 
-
+export interface IgnoredRule {
+    /**
+     * RuleId to ignore
+     */
+    ruleId?: string;
+    /**
+     * HTML tag ignored
+     */
+    htmlTag?: string;
+    /**
+     * if true the rule will be applied only if it's the last tag
+     * if false the rule will be applied only if it's not the last tag (all the children)
+     * if empty, the rule will be applied
+     * Note the htmlTag is required to use true/false
+     */
+    lastTag?: boolean;
+}
 
 const plugin: DevToolsPlugin = {
     init: function (devToolsInterface: DevToolsInterface): void {
@@ -713,4 +801,9 @@ const plugin: DevToolsPlugin = {
     }
 };
 
+enum eRuleIcon {
+    VIOLATION = "VIOLATION",
+    RECOMMENDATION = "RECOMMENDATION",
+    NEED_REVIEW = "NEED_REVIEW"
+}
 (window as any).Vaadin.devToolsPlugins.push(plugin);
