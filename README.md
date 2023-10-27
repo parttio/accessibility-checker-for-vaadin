@@ -4,7 +4,7 @@
 
 Starting the demo server:
 
-Go to accessibility-checker-for-vaadin-demo and run:
+Go to `accessibility-checker-for-vaadin-demo` and run:
 ```
 mvn spring-boot:run
 ```
@@ -32,13 +32,15 @@ If you change the Java code and run "Recompile"it will be taken into account aft
 
 For the typescript changes, the folder in the addon library is already listened.
 
-## Publishing to Vaadin Directory
+## Publishing to Vaadin Directory / Maven Central
 
-With commit rights to the repository, issue:
+Push all your changes in the main branch, then run in the `accessibility-checker-for-vaadin` folder (the addon folder):
 
     mvn release:prepare release:clean
 
 Configured GH action will build a release and push to Maven Central.
+
+You need to update the pom.xml for the `accessibility-checker-for-vaadin-demo` project to manually update the version of the addon (for example `0.0.7-SNAPSHOT` to `0.0.8-SNAPSHOT`)
 
 ## Licence
 
