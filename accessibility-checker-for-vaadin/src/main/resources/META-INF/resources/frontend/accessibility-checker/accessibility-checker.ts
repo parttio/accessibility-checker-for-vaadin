@@ -223,7 +223,10 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         {htmlTag: "iframe", lastTag: false},
         {ruleId: "style_before_after_review"},
         {ruleId: "style_highcontrast_visible"},
-        {ruleId: "style_color_misuse", htmlTag: "style"}
+        {ruleId: "style_color_misuse", htmlTag: "style"},
+        {ruleId: "table_aria_descendants", htmlTag: "vaadin-grid"}, // maybe the filter could be different
+        {ruleId: "list_structure_proper", htmlTag: "vaadin-side-nav"},
+        {ruleId: "aria_child_valid", htmlTag: "vaadin-side-nav"} // the children "li" are not detected for the ul inside the shadow root of the vaadin-side-nav
     ];
 
 
@@ -334,23 +337,23 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
                               <span>
                                 ${this.report.length} issues
                               </span>
-        
-                              <span>
+
+                                <span>
                                   ${this.getIcon(eRuleIcon.VIOLATION)}
                                   ${this.report.filter((issues: RuleDetails) => this.getRuleIcon(issues.value[0],issues.value[1]) == eRuleIcon.VIOLATION).length}
                                   violations
                               </span>
-                                        <span>
+                                <span>
                                   ${this.getIcon(eRuleIcon.NEED_REVIEW)}
                                    ${this.report.filter((issues: RuleDetails) => this.getRuleIcon(issues.value[0],issues.value[1]) == eRuleIcon.NEED_REVIEW).length}
                                   need review
                               </span>
-                                        <span>
+                                <span>
                                   ${this.getIcon(eRuleIcon.RECOMMENDATION)}
                                   ${this.report.filter((issues: RuleDetails) => this.getRuleIcon(issues.value[0],issues.value[1]) == eRuleIcon.RECOMMENDATION).length}
                                   recommendations
                               </span>
-                              <button class="button" @click=${this.runTests}>Re-run Check</button>
+                                <button class="button" @click=${this.runTests}>Re-run Check</button>
                             </div>
                             <ul class="result-list">
                                 ${this.report.map((item, index) => this.renderItem(item, index))}
@@ -503,20 +506,27 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
                                 label</label>
                             <input class="text-field" id="input-label"
                                    placeholder="Type label here">
-                            <button class="button" @click="${() => this.setLabel(issue.node, '#input-label')}">Set label</button>
-                            <button class="button" @click="${() => this.setAriaLabel(issue.node, '#input-label')}">Set aria label</button>
+                            <button class="button" @click="${() => this.setLabel(issue.node, '#input-label')}">Set
+                                label
+                            </button>
+                            <button class="button" @click="${() => this.setAriaLabel(issue.node, '#input-label')}">Set
+                                aria label
+                            </button>
                         </div>
                     </div>`;
             case "page_title_exists":
                 return html`
                     <div class="section">
-                        <h3 class="small-heading">Fix issue (<a href="https://vaadin.com/docs/latest/routing/page-titles" target="_blank">docs</a>)</h3>
+                        <h3 class="small-heading">Fix issue (<a
+                                href="https://vaadin.com/docs/latest/routing/page-titles" target="_blank">docs</a>)</h3>
 
                         <div>
                             <label for="input-page-title">Enter a page title</label>
                             <input class="text-field" id="input-page-title"
                                    placeholder="Type Page Title here">
-                            <button class="button" @click="${() => this.setPageTitle('#input-page-title')}">Set page title</button>
+                            <button class="button" @click="${() => this.setPageTitle('#input-page-title')}">Set page
+                                title
+                            </button>
                         </div>
                     </div>`;
             case "frame_title_exists":
@@ -526,7 +536,9 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
                         <div>
                             <label for="input-label">Enter a title for the html component</label>
                             <input class="text-field" id="input-title" placeholder="Type alternative text here">
-                            <button class="button" @click="${() => this.setTitle(issue.node, '#input-title')}">Set title</button>
+                            <button class="button" @click="${() => this.setTitle(issue.node, '#input-title')}">Set
+                                title
+                            </button>
                         </div>
                     </div>`
             case "img_alt_valid":
@@ -534,9 +546,12 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
                     <div class="section">
                         <h3 class="small-heading">Fix issue</h3>
                         <div>
-                            <label for="input-label">Enter an alternative text for the image or an empty text if it's decorative</label>
+                            <label for="input-label">Enter an alternative text for the image or an empty text if it's
+                                decorative</label>
                             <input class="text-field" id="input-alt" placeholder="Type alternative text here">
-                            <button class="button" @click="${() => this.setAltText(issue.node, '#input-alt')}">Set alternative text</button>
+                            <button class="button" @click="${() => this.setAltText(issue.node, '#input-alt')}">Set
+                                alternative text
+                            </button>
                         </div>
                     </div>`
             case "skip_main_exists":
@@ -546,10 +561,25 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
                         <h3 class="small-heading">Fix issue</h3>
 
                         <div>
-                            This will replace your superclass for the Route to a Main object if the superclass is a VerticalLayout, HorizontalLayout or a Div.
-                            <button class="button" @click="${() => this.updateRouteExtends()}">Update the superclass</button>
+                            This will replace your superclass for the Route to a Main object if the superclass is a
+                            VerticalLayout, HorizontalLayout or a Div.
+                            <button class="button" @click="${() => this.updateRouteExtends()}">Update the superclass
+                            </button>
                         </div>
                     </div>`;
+
+            case "element_tabbable_visible":
+            case "aria_hidden_nontabbable":
+                const component = this.getComponentForNode(issue.node);
+                if (component!.element!.tagName == 'VAADIN-SIDE-NAV') {
+                    return html`
+                    <div class="section">
+                        <h3 class="small-heading">Linked issue</h3>
+                        <div>
+                            See this <a href="https://github.com/vaadin/web-components/issues/6708" target="_blank">ticket</a>
+                        </div>
+                    </div>`;
+                }
         }
         return nothing;
     }
