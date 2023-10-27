@@ -213,7 +213,7 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
     @state()
     private element: HTMLElement | null = null;
 
-    private debugMode = true;
+    private debugMode = false;
 
     /** Ignored rule id, preferably to be configured and loaded in the init method **/
     ignoredRules: IgnoredRule[] = [
@@ -225,6 +225,7 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         {ruleId: "style_highcontrast_visible"},
         {ruleId: "style_color_misuse", htmlTag: "style"},
         {ruleId: "table_aria_descendants", htmlTag: "vaadin-grid"}, // maybe the filter could be different
+        {ruleId: "input_label_before", htmlTag: "vaadin-text-field"}, // that's a false positive, the label is before the input
         {ruleId: "list_structure_proper", htmlTag: "vaadin-side-nav"},
         {ruleId: "aria_child_valid", htmlTag: "vaadin-side-nav"} // the children "li" are not detected for the ul inside the shadow root of the vaadin-side-nav
     ];
@@ -573,12 +574,12 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
                 const component = this.getComponentForNode(issue.node);
                 if (component!.element!.tagName == 'VAADIN-SIDE-NAV') {
                     return html`
-                    <div class="section">
-                        <h3 class="small-heading">Linked issue</h3>
-                        <div>
-                            See this <a href="https://github.com/vaadin/web-components/issues/6708" target="_blank">ticket</a>
-                        </div>
-                    </div>`;
+                        <div class="section">
+                            <h3 class="small-heading">Linked issue</h3>
+                            <div>
+                                See this <a href="https://github.com/vaadin/web-components/issues/6708" target="_blank">ticket</a>
+                            </div>
+                        </div>`;
                 }
         }
         return nothing;
@@ -588,7 +589,10 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         if (rulePolicy == eRulePolicy.VIOLATION && ruleConfidence == eRuleConfidence.FAIL) {
             return eRuleIcon.VIOLATION;
         }
-        if (ruleConfidence !== eRuleConfidence.FAIL) {
+        if (rulePolicy == eRulePolicy.RECOMMENDATION) {
+            return eRuleIcon.RECOMMENDATION;
+        }
+        if (ruleConfidence == eRuleConfidence.POTENTIAL) {
             return eRuleIcon.NEED_REVIEW;
         }
         return eRuleIcon.RECOMMENDATION
