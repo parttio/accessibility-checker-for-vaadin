@@ -6,7 +6,7 @@
 
     <groupId>org.parttio</groupId>
     <artifactId>accessibility-checker-for-vaadin-demo</artifactId>
-    <version>0.0.7-SNAPSHOT</version>
+    <version>0.0.8-SNAPSHOT</version>
 
     <name>accessibility-checker-for-vaadin-demo</name>
     <packaging>jar</packaging>
@@ -87,7 +87,7 @@
        <dependency>
            <groupId>org.parttio</groupId>
            <artifactId>accessibility-checker-for-vaadin</artifactId>
-           <version>0.0.7-SNAPSHOT</version>
+           <version>0.0.8-SNAPSHOT</version>
        </dependency>
 
         <dependency>
