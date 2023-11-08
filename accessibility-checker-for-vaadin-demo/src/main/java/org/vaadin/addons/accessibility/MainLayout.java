@@ -6,6 +6,7 @@ import com.vaadin.flow.component.html.*;
 import com.vaadin.flow.component.sidenav.SideNav;
 import com.vaadin.flow.component.sidenav.SideNavItem;
 import com.vaadin.flow.router.*;
+import org.vaadin.addons.accessibility.cases.IndexView;
 
 import java.util.Comparator;
 import java.util.List;
@@ -51,7 +52,11 @@ public class MainLayout extends Div implements RouterLayout, AfterNavigationObse
                 .sorted(Comparator.comparing(RouteBaseData::getTemplate))
                 .toList();
         for (RouteData myRoute : myRoutes) {
-            nav.addItem(new SideNavItem(myRoute.getTemplate(), myRoute.getNavigationTarget()));
+            if (myRoute.getTemplate().isEmpty()) {
+                nav.addItem(new SideNavItem("Home", myRoute.getNavigationTarget()));
+            } else {
+                nav.addItem(new SideNavItem(myRoute.getTemplate(), myRoute.getNavigationTarget()));
+            }
         }
         return nav;
     }

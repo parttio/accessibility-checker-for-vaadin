@@ -515,6 +515,20 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
                             </button>
                         </div>
                     </div>`;
+            case 'a_text_purpose':
+                return html`
+                    <div class="section">
+                        <h3 class="small-heading">Fix issue</h3>
+
+                        <div>
+                            <label for="input-label">Enter an invisible (Aria) label</label>
+                            <input class="text-field" id="input-label"
+                                   placeholder="Type label here">
+                            <button class="button" @click="${() => this.setAriaLabel(issue.node, '#input-label')}">Set
+                                aria label
+                            </button>
+                        </div>
+                    </div>`;
             case "page_title_exists":
                 return html`
                     <div class="section">
