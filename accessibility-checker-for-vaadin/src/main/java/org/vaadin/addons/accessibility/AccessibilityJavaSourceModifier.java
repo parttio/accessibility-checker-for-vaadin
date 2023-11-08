@@ -184,6 +184,7 @@ public class AccessibilityJavaSourceModifier extends Editor {
                         getLogger().debug("insert the page title {}", pageTitle);
 
                         node.addAnnotation(normalAnnotationExpr);
+                        modifications.add(Modification.addImport(cu, new ImportDeclaration(PageTitle.class.getName(), false, false)));
                         modifications.add(Modification.insertLineBefore(node, normalAnnotationExpr));
                     }
                 });
@@ -211,9 +212,7 @@ public class AccessibilityJavaSourceModifier extends Editor {
                     Optional<ClassOrInterfaceType> optionalClassOrInterfaceType = node.getExtendedTypes().stream()
                             .filter(t -> {
                                 String simpleName = t.getNameAsString();
-                                return simpleName.equals(VerticalLayout.class.getSimpleName())
-                                        || simpleName.equals(HorizontalLayout.class.getSimpleName())
-                                        || simpleName.equals(Div.class.getSimpleName());
+                                return simpleName.equals(Div.class.getSimpleName());
                             }).findFirst();
                     if (optionalClassOrInterfaceType.isPresent()) {
                         ClassOrInterfaceType extendedTypes = optionalClassOrInterfaceType.get();
