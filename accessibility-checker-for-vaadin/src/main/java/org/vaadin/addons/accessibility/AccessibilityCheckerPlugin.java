@@ -23,9 +23,11 @@ package org.vaadin.addons.accessibility;
 import com.vaadin.base.devserver.DevToolsInterface;
 import com.vaadin.base.devserver.DevToolsMessageHandler;
 import com.vaadin.base.devserver.IdeIntegration;
+import com.vaadin.base.devserver.editor.Editor;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.component.dependency.NpmPackage;
+import com.vaadin.flow.component.internal.ComponentTracker;
 import com.vaadin.flow.dom.Element;
 import com.vaadin.flow.server.VaadinService;
 import com.vaadin.flow.server.VaadinSession;
@@ -33,6 +35,8 @@ import com.vaadin.flow.server.startup.ApplicationConfiguration;
 import elemental.json.Json;
 import elemental.json.JsonObject;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -108,6 +112,20 @@ public class AccessibilityCheckerPlugin implements DevToolsMessageHandler {
         } else if (command.equals(ACCESSIBILITY_CHECKER + "-update-route-extends")) {
             int uiId = (int) data.getNumber(UI_ID);
             getAccessibilityJavaSourceModifier().updateRouteExtends(devToolsInterface,uiId);
+            return true;
+        } else if (command.equals(ACCESSIBILITY_CHECKER + "-show-route")) {
+
+            int uiId = (int) data.getNumber(UI_ID);
+            VaadinSession session = VaadinSession.getCurrent();
+            session.access(() -> {
+                Component currentView = session.getUIById(uiId).getCurrentView();
+                if (currentView != null) {
+                    getIdeIntegration().showComponentCreateInIde(currentView);
+                } else {
+                    System.out.println(
+                            "Only component locations are tracked. The given node id refers to an element and not a component");
+                }
+            });
             return true;
         }
         return false;

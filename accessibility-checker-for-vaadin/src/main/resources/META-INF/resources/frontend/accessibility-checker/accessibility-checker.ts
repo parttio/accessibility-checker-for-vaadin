@@ -210,8 +210,7 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
     @property()
     errorMessage?: string;
 
-    @state()
-    private element: HTMLElement | null = null;
+    private node: Node | null = null;
 
     private debugMode = false;
 
@@ -223,6 +222,7 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         {htmlTag: "iframe", lastTag: false},
         {ruleId: "style_before_after_review"},
         {ruleId: "style_highcontrast_visible"},
+        {ruleId: "input_fields_grouped"}, // is it really needed to group them with a fieldset
         {ruleId: "style_color_misuse", htmlTag: "style"},
         {ruleId: "table_aria_descendants", htmlTag: "vaadin-grid"}, // maybe the filter could be different
         {ruleId: "input_label_before", htmlTag: "vaadin-text-field"}, // that's a false positive, the label is before the input
@@ -254,19 +254,25 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         if (component !== undefined) {
             const serializableComponentRef: ComponentReference = {nodeId: component.nodeId, uiId: component.uiId};
             devTools.send(`${AccessibilityChecker.NAME}-show-component-creation-location`, serializableComponentRef);
+        } else {
+            // Open the Route class
+            const uiId = this.getUiId();
+            devTools.send(`${AccessibilityChecker.NAME}-show-route`, {
+                uiId: uiId
+            });
         }
     }
 
     backToList() {
         if (this.indexDetail && this.report) {
-            this.resetHighlight(this.report[this.indexDetail].node.parentElement);
+            this.resetHighlight(this.report[this.indexDetail].node);
         }
         this.indexDetail = undefined;
     }
 
     back() {
         if (this.indexDetail && this.report) {
-            this.resetHighlight(this.report[this.indexDetail].node.parentElement);
+            this.resetHighlight(this.report[this.indexDetail].node);
         }
         if (this.indexDetail) {
             this.indexDetail--;
@@ -277,13 +283,13 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         }
 
         if (this.indexDetail && this.report) {
-            this.element = this.report[this.indexDetail].node.parentElement;
-            this.highlight(this.element);
+            this.node = this.report[this.indexDetail].node;
+            this.highlight(this.node);
         }
     }
     next() {
-        if (this.indexDetail && this.report) {
-            this.resetHighlight(this.report[this.indexDetail].node.parentElement);
+        if (this.indexDetail !== undefined && this.report) {
+            this.resetHighlight(this.report[this.indexDetail].node);
         }
         if (this.indexDetail !== undefined && this.report && this.indexDetail < this.report.length - 1) {
             this.indexDetail++;
@@ -291,21 +297,27 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
             this.indexDetail = 0;
         }
 
-        if (this.indexDetail && this.report) {
-            this.element = this.report[this.indexDetail].node.parentElement;
-            this.highlight(this.element);
+        if (this.report) {
+            this.node = this.report[this.indexDetail].node;
+            this.highlight(this.node);
         }
     }
 
-    private highlight(element: HTMLElement | null) {
-        if (element) {
-            element.classList.add('vaadin-accessibility-checker-highlight');
+    private highlight(node:Node) {
+        if (node) {
+            const elementForNode = this.getElementForNode(node);
+            if (elementForNode) {
+                elementForNode.classList.add('vaadin-accessibility-checker-highlight');
+            }
         }
     }
 
-    private resetHighlight(element: HTMLElement | null) {
-        if (element) {
-            element.classList.remove('vaadin-accessibility-checker-highlight');
+    private resetHighlight(node:Node) {
+        if (node) {
+            const elementForNode = this.getElementForNode(node);
+            if (elementForNode) {
+                elementForNode.classList.remove('vaadin-accessibility-checker-highlight');
+            }
         }
     }
 
@@ -313,13 +325,15 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         this.report = undefined;
         this.detail = undefined;
         this.indexDetail = undefined;
-        this.element = null;
+        this.node = null;
         const vaadinDevTool = (document.getElementsByTagName('vaadin-dev-tools')[0] as VaadinDevTools);
         vaadinDevTool.disableJavaLiveReload();
     }
 
     deactivate() {
-        this.resetHighlight(this.element);
+        if (this.node) {
+            this.resetHighlight(this.node);
+        }
         const vaadinDevTool = (document.getElementsByTagName('vaadin-dev-tools')[0] as VaadinDevTools);
         vaadinDevTool.enableJavaLiveReload();
     }
@@ -333,7 +347,7 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         } else {
             return html`
                 ${this.report
-                ? html`<div class="container">
+                        ? html`<div class="container">
                             <div class="issue-summary">
                               <span>
                                 ${this.report.length} issues
@@ -361,7 +375,7 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
                             </ul>
                         </div>
                         `
-                : html`<div class="issue-summary">
+                        : html`<div class="issue-summary">
                             Click "Run check" to start the accessibility assessment.
                             <button class="button" @click=${this.runTests}>Run Check</button>
                         </div>
@@ -378,8 +392,8 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         return html`<li class="result" @click="${() => {
             this.indexDetail = index;
             if (this.report) {
-                this.element = this.report[this.indexDetail].node.parentElement;
-                this.highlight(this.element);
+                this.node = this.report[this.indexDetail].node;
+                this.highlight(this.node);
             }
         }
         }">
@@ -402,19 +416,31 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
      * @param node
      */
     getComponentForNode(node: Node): ComponentReference | undefined {
-        if (node instanceof HTMLElement) {
-            if (node.parentElement && node.slot.length > 0 && node.parentElement.tagName.startsWith("VAADIN")) {
-                // use the parent element
-                const componentList = getComponents(node.parentElement!);
-                return componentList[componentList.length - 1];
-            } else {
-                const componentList = getComponents(node);
-                return componentList[componentList.length - 1];
-            }
+        const elementForNode = this.getElementForNode(node);
+        if (elementForNode) {
+            const componentList = getComponents(elementForNode);
+            return componentList[componentList.length - 1];
         }
         return undefined;
     }
 
+    getElementForNode(node: Node) {
+        if (node instanceof HTMLElement) {
+            const rootNode = node.getRootNode();
+            if (rootNode instanceof ShadowRoot) {
+                return rootNode.host as HTMLElement;
+            } else if (node.parentElement && node.slot.length > 0 && node.parentElement.tagName.startsWith("VAADIN")) {
+                // use the parent element
+                return node.parentElement!;
+            } else {
+                return node;
+            }
+        }
+        return undefined;
+    }
+    private isInShadow(node: Node) {
+        return node.getRootNode() instanceof ShadowRoot;
+    }
 
     getUiId() {
         const vaadin = (window as any).Vaadin;
@@ -444,8 +470,10 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
                 <div class="result detail-header">
                     <h2 class="component">
                         ${component?.element?.tagName ? html`${component.element.tagName}` : html`Global issue`}</h2>
-                    ${(component?.element) ? html`
-                        <button class="button" @click="${() => this.openIde(issue.node)}">Open in IDE</button>` : html``}
+                    
+                        <button class="button" @click="${() => this.openIde(issue.node)}">
+                            ${(component?.element) ? html`Open the component in IDE` : html`Open the route in IDE`} 
+                        </button>
                 </div>
 
                 <div class="detail-actionbar">
@@ -476,7 +504,7 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
                 </div>
 
                 ${(this.generateVaadinDetails(issue))
-        }
+                }
 
                 <div class="section">
                     <h3 class="small-heading">Help <a
