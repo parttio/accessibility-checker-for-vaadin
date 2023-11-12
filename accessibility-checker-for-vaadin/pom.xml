@@ -4,7 +4,7 @@
 
     <groupId>org.parttio</groupId>
     <artifactId>accessibility-checker-for-vaadin</artifactId>
-    <version>0.0.10-SNAPSHOT</version>
+    <version>0.0.10</version>
     <packaging>jar</packaging>
 
     <name>Accessibility checker</name>
@@ -54,7 +54,7 @@
         <url>https://github.com/parttio/accessibility-checker-for-vaadin</url>
         <connection>scm:git:git://github.com/parttio/accessibility-checker-for-vaadin.git</connection>
         <developerConnection>scm:git:https://github.com/parttio/accessibility-checker-for-vaadin.git</developerConnection>
-        <tag>accessibility-checker-for-vaadin-0.0.8</tag>
+        <tag>accessibility-checker-for-vaadin-0.0.10</tag>
     </scm>
 
     <distributionManagement>
