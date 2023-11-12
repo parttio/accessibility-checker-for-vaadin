@@ -1,6 +1,11 @@
 # 
 
 ## Development instructions
+Run
+```
+mvn install
+```
+to install the latest SNAPSHOT version.
 
 Starting the demo server:
 
@@ -10,6 +15,8 @@ mvn spring-boot:run
 ```
 
 This deploys demo at http://localhost:8080
+
+Open the devtools and check if there is an `Accessibility Checker` tab.
 
 ## How to use it
 

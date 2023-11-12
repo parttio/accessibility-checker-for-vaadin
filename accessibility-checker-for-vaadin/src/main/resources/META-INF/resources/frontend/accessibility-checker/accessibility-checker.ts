@@ -1,10 +1,8 @@
 import {html, css, LitElement, nothing} from 'lit';
-import {customElement, property, state} from 'lit/decorators.js';
+import {customElement, property} from 'lit/decorators.js';
 
 import {
-    eRuleCategory,
     eRuleConfidence,
-    eRuleLevel,
     eRulePolicy,
     RuleDetails
 } from "accessibility-checker/lib/api/IEngine";
@@ -20,6 +18,7 @@ import type {
     VaadinDevTools
 } from 'Frontend/generated/jar-resources/vaadin-dev-tools/vaadin-dev-tools';
 import {injectGlobalCss} from "./copy-styles";
+import {ThemeEditor} from "Frontend/generated/jar-resources/vaadin-dev-tools/theme-editor/editor";
 
 
 injectGlobalCss(css`
@@ -303,7 +302,7 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         }
     }
 
-    private highlight(node:Node) {
+    private highlight(node:Node | null) {
         if (node) {
             const elementForNode = this.getElementForNode(node);
             if (elementForNode) {
@@ -312,7 +311,7 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         }
     }
 
-    private resetHighlight(node:Node) {
+    private resetHighlight(node:Node | null) {
         if (node) {
             const elementForNode = this.getElementForNode(node);
             if (elementForNode) {
@@ -415,7 +414,7 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
      * That might need to be refined
      * @param node
      */
-    getComponentForNode(node: Node): ComponentReference | undefined {
+    private getComponentForNode(node: Node): ComponentReference | undefined {
         const elementForNode = this.getElementForNode(node);
         if (elementForNode) {
             const componentList = getComponents(elementForNode);
@@ -424,12 +423,13 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         return undefined;
     }
 
-    getElementForNode(node: Node) {
+    private getElementForNode(node: Node) {
         if (node instanceof HTMLElement) {
             const rootNode = node.getRootNode();
             if (rootNode instanceof ShadowRoot) {
                 return rootNode.host as HTMLElement;
-            } else if (node.parentElement && node.slot.length > 0 && node.parentElement.tagName.startsWith("VAADIN")) {
+            } else if (node.parentElement && node.slot == 'input' && node.parentElement.tagName.startsWith("VAADIN")) {
+                // the input slot for the textfield is a bit different
                 // use the parent element
                 return node.parentElement!;
             } else {
@@ -438,11 +438,8 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         }
         return undefined;
     }
-    private isInShadow(node: Node) {
-        return node.getRootNode() instanceof ShadowRoot;
-    }
 
-    getUiId() {
+    private getUiId() {
         const vaadin = (window as any).Vaadin;
         if (vaadin && vaadin.Flow) {
             const { clients } = vaadin.Flow;
@@ -609,7 +606,19 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
                             </button>
                         </div>
                     </div>`;
+            case "text_contrast_sufficient":
 
+                return html`
+                    <div class="section">
+                        <h3 class="small-heading">Hint</h3>
+
+                        <div>
+                            You can open the component in the theme editor and update the background or foreground color.
+                            <button class="button" @click="${() => this.openComponentInThemeEditor(issue.node)}">Open in the theme editor
+                            </button>
+                            
+                        </div>
+                    </div>`;
             case "element_tabbable_visible":
             case "aria_hidden_nontabbable":
                 const component = this.getComponentForNode(issue.node);
@@ -746,6 +755,24 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
             uiId: uiId
         });
     }
+
+    // Really hack way of opening the theme editor in the right component
+    openComponentInThemeEditor(node:Node) {
+
+        (window as any).Vaadin.devTools.shadowRoot.getElementById('theme-editor').click(); // open the theme editor
+
+        const component = this.getComponentForNode(node);
+        if (component !== undefined) {
+            const querySelector = (window as any).Vaadin.devTools.shadowRoot.querySelector('vaadin-dev-tools-theme-editor');
+            // Open and configure the pickerComponent (set the pickCallback)
+            (querySelector as any).pickComponent();
+            // close the picker
+            (querySelector as ThemeEditor).pickerProvider().close();
+            // Select the component
+            (querySelector as ThemeEditor).pickerProvider().options!.pickCallback(component);
+        }
+    }
+
 
     setTitle(node:Node, id: string) {
         const text = (this.renderRoot.querySelector(id) as HTMLInputElement).value;
