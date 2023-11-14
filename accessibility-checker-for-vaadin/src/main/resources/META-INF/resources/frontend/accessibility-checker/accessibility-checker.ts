@@ -195,6 +195,9 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
       .expand {
         flex-grow:1;
       }
+      code {
+        user-select: all;
+      }
     `;
 
     @property()
@@ -520,6 +523,7 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
     }
 
     private generateVaadinDetails(issue: RuleDetails) {
+        const component = this.getComponentForNode(issue.node);
         switch (issue.ruleId) {
             case "input_label_visible":
             case "input_label_exists":
@@ -619,9 +623,20 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
                             
                         </div>
                     </div>`;
+            case "aria_widget_labelled":
+                if (component!.element!.tagName == 'VAADIN-GRID') {
+                    return html`
+                        <div class="section">
+                            <h3 class="small-heading">Linked issue</h3>
+                            <div>
+                                See this <a href="https://github.com/vaadin/web-components/issues/6749" target="_blank">ticket</a> As a workaround you can do: <br/>
+                                <code>grid.getElement().executeJs("this.shadowRoot.querySelector('table').ariaLabel = $0", "My grid name");</code>
+                            </div>
+                        </div>`;
+                }
+                return nothing;
             case "element_tabbable_visible":
             case "aria_hidden_nontabbable":
-                const component = this.getComponentForNode(issue.node);
                 if (component!.element!.tagName == 'VAADIN-SIDE-NAV') {
                     return html`
                         <div class="section">
@@ -709,33 +724,40 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
 
     setLabel(node:Node, id: string) {
         const labelText = (this.renderRoot.querySelector(id) as HTMLInputElement).value;
-        const element = node.parentElement;
-        // set the label on the client side
-        (element as any).label = labelText;
-        // set the label on the server side
-        const component = this.getComponentForNode(node);
-        if (component !== undefined) {
-            const serializableComponentRef: ComponentReference = {nodeId: component.nodeId, uiId: component.uiId};
-            devTools.send(`${AccessibilityChecker.NAME}-set-label`, {
-                nodeId: component.nodeId,
-                uiId: component.uiId,
-                label: labelText
-            });
+        const element = this.getElementForNode(node);
+        if (element) {
+            // set the label on the client side
+            (element as any).label = labelText;
+            // set the label on the server side
+            const component = this.getComponentForNode(node);
+            if (component !== undefined) {
+                const serializableComponentRef: ComponentReference = {nodeId: component.nodeId, uiId: component.uiId};
+                devTools.send(`${AccessibilityChecker.NAME}-set-label`, {
+                    nodeId: component.nodeId,
+                    uiId: component.uiId,
+                    label: labelText
+                });
+            }
         }
     }
 
     setAriaLabel(node:Node, id: string) {
         const labelText = (this.renderRoot.querySelector(id) as HTMLInputElement).value;
-        const element = node.parentElement;
-        (element as any).accessibleName = labelText;
+        const element = this.getElementForNode(node);
+        if (element) {
+            // for Vaadin element
+            (element as any).accessibleName = labelText;
+            // for html element
+            element!.ariaLabel = labelText;
 
-        const component = this.getComponentForNode(node);
-        if (component !== undefined) {
-            devTools.send(`${AccessibilityChecker.NAME}-set-aria-label`, {
-                nodeId: component.nodeId,
-                uiId: component.uiId,
-                label: labelText
-            });
+            const component = this.getComponentForNode(node);
+            if (component !== undefined) {
+                devTools.send(`${AccessibilityChecker.NAME}-set-aria-label`, {
+                    nodeId: component.nodeId,
+                    uiId: component.uiId,
+                    label: labelText
+                });
+            }
         }
     }
 

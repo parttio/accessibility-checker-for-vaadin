@@ -40,6 +40,7 @@ import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.HasAriaLabel;
 import com.vaadin.flow.component.HasLabel;
 import com.vaadin.flow.component.HtmlComponent;
+import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Main;
@@ -102,7 +103,10 @@ public class AccessibilityJavaSourceModifier extends Editor {
             Component component = getComponent(session, uiId, nodeId);
             if (component instanceof HasAriaLabel) {
                 setText(component, label, new AriaLabelVisitor());
-            } else {
+            } /*else if (component instanceof Grid<?>) {
+                // todo
+                // grid.getElement().executeJs("this.shadowRoot.querySelector('table').ariaLabel = $0", label);
+            } */else {
                 throw new AccessibilityCheckerException( "The component does not implement HasAriaLabel");
             }
         });
