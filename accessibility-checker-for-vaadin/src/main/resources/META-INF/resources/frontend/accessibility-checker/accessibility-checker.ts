@@ -214,6 +214,7 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
 
     private node: Node | null = null;
 
+    private scrollPosition = 0;
     private debugMode = false;
 
     /** Ignored rule id, preferably to be configured and loaded in the init method **/
@@ -227,13 +228,16 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         {ruleId: "input_fields_grouped"}, // is it really needed to group them with a fieldset
         {ruleId: "style_color_misuse", htmlTag: "style"},
         {ruleId: "table_aria_descendants", htmlTag: "vaadin-grid"}, // maybe the filter could be different
-        {ruleId: "input_label_before", htmlTag: "vaadin-text-field"}, // that's a false positive, the label is before the input
+        //  {ruleId: "input_label_before", htmlTag: "vaadin-text-field"}, that's a false positive, the label is before the input
+        {ruleId: "input_label_before"}, // that's a false positive, the label is before the input. Maybe we can filter only for vaadin components
         {ruleId: "list_structure_proper", htmlTag: "vaadin-side-nav"},
         {ruleId: "aria_child_valid", htmlTag: "vaadin-side-nav"} // the children "li" are not detected for the ul inside the shadow root of the vaadin-side-nav
     ];
 
 
     async runTests() {
+        // reset the scroll position
+        this.scrollPosition = 0;
         const accessibilityCheckResult = await runAccessibilityCheck(document);
         const start = new Date().getTime();
         // Remove passing issues
@@ -265,11 +269,14 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         }
     }
 
-    backToList() {
+    async backToList() {
         if (this.indexDetail && this.report) {
             this.resetHighlight(this.report[this.indexDetail].node);
         }
         this.indexDetail = undefined;
+        // wait for the update and set the scroll position
+        await this.updateComplete;
+        (this.renderRoot.querySelector("#result-list") as HTMLElement).scrollTop = this.scrollPosition;
     }
 
     back() {
@@ -349,7 +356,7 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         } else {
             return html`
                 ${this.report
-                        ? html`<div class="container">
+                ? html`<div class="container">
                             <div class="issue-summary">
                               <span>
                                 ${this.report.length} issues
@@ -372,12 +379,12 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
                               </span>
                                 <button class="button" @click=${this.runTests}>Re-run Check</button>
                             </div>
-                            <ul class="result-list">
+                            <ul class="result-list" id="result-list">
                                 ${this.report.map((item, index) => this.renderItem(item, index))}
                             </ul>
                         </div>
                         `
-                        : html`<div class="issue-summary">
+                : html`<div class="issue-summary">
                             Click "Run check" to start the accessibility assessment.
                             <button class="button" @click=${this.runTests}>Run Check</button>
                         </div>
@@ -392,6 +399,8 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
 
         const component = this.getComponentForNode(issue.node);
         return html`<li class="result" @click="${() => {
+            // save the scroll position
+            this.scrollPosition = (this.renderRoot.querySelector("#result-list") as HTMLElement).scrollTop;
             this.indexDetail = index;
             if (this.report) {
                 this.node = this.report[this.indexDetail].node;
@@ -470,10 +479,10 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
                 <div class="result detail-header">
                     <h2 class="component">
                         ${component?.element?.tagName ? html`${component.element.tagName}` : html`Global issue`}</h2>
-                    
-                        <button class="button" @click="${() => this.openIde(issue.node)}">
-                            ${(component?.element) ? html`Open the component in IDE` : html`Open the route in IDE`} 
-                        </button>
+
+                    <button class="button" @click="${() => this.openIde(issue.node)}">
+                        ${(component?.element) ? html`Open the component in IDE` : html`Open the route in IDE`}
+                    </button>
                 </div>
 
                 <div class="detail-actionbar">
@@ -504,7 +513,7 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
                 </div>
 
                 ${(this.generateVaadinDetails(issue))
-                }
+        }
 
                 <div class="section">
                     <h3 class="small-heading">Help <a
@@ -620,7 +629,7 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
                             You can open the component in the theme editor and update the background or foreground color.
                             <button class="button" @click="${() => this.openComponentInThemeEditor(issue.node)}">Open in the theme editor
                             </button>
-                            
+
                         </div>
                     </div>`;
             case "aria_widget_labelled":
