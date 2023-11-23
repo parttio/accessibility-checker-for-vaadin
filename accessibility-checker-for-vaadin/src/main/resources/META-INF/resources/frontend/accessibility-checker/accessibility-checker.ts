@@ -1,5 +1,5 @@
 import {html, css, LitElement, nothing} from 'lit';
-import {customElement, property} from 'lit/decorators.js';
+import {customElement, property, state} from 'lit/decorators.js';
 
 import {
     eRuleConfidence,
@@ -48,6 +48,7 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         position: sticky;
         top: -0.75rem;
         z-index: 1;
+        display: flex;
       }
 
       .icon {
@@ -198,6 +199,36 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
       code {
         user-select: all;
       }
+      .button-run {
+        display: inline-flex;
+        align-items: center;
+        margin-left: auto;
+      }
+
+      .no-loading-icon {
+        display: inline-block;
+        width: 14px;
+        height: 14px;
+        margin-right: 3px;
+      }
+      .loading-icon {
+        display: inline-block;
+        width: 14px;
+        height: 14px;
+        border: 2px solid rgba(255,255,255,.3);
+        border-radius: 50%;
+        border-top-color: #fff;
+        animation: spin 1s ease-in-out infinite;
+        -webkit-animation: spin 1s ease-in-out infinite;
+        margin-right: 3px;
+      }
+
+      @keyframes spin {
+        to { -webkit-transform: rotate(360deg); }
+      }
+      @-webkit-keyframes spin {
+        to { -webkit-transform: rotate(360deg); }
+      }
     `;
 
     @property()
@@ -216,6 +247,9 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
 
     private scrollPosition = 0;
     private debugMode = false;
+
+    @state()
+    private checkRunning = false;
 
     /** Ignored rule id, preferably to be configured and loaded in the init method **/
     ignoredRules: IgnoredRule[] = [
@@ -236,6 +270,7 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
 
 
     async runTests() {
+        this.checkRunning = true;
         // reset the scroll position
         this.scrollPosition = 0;
         const accessibilityCheckResult = await runAccessibilityCheck(document);
@@ -253,6 +288,7 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
             console.debug(`Time elapsed ${duration / 1000}s`);
         }
         this.report = accessibilityCheckResult.results;
+        this.checkRunning = false;
     }
 
     openIde(node:Node) {
@@ -331,6 +367,7 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
     }
 
     activate() {
+        this.checkRunning = false;
         this.report = undefined;
         this.detail = undefined;
         this.indexDetail = undefined;
@@ -377,7 +414,9 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
                                   ${this.report.filter((issues: RuleDetails) => this.getRuleIcon(issues.value[0],issues.value[1]) == eRuleIcon.RECOMMENDATION).length}
                                   recommendations
                               </span>
-                                <button class="button" @click=${this.runTests}>Re-run Check</button>
+                                <button class="button button-run" ?disabled=${this.checkRunning} @click=${this.runTests}>
+                                    ${(this.checkRunning)? html`<span class="loading-icon"></span>`: nothing}
+                                    Re-run Check</button>
                             </div>
                             <ul class="result-list" id="result-list">
                                 ${this.report.map((item, index) => this.renderItem(item, index))}
@@ -386,7 +425,8 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
                         `
                 : html`<div class="issue-summary">
                             Click "Run check" to start the accessibility assessment.
-                            <button class="button" @click=${this.runTests}>Run Check</button>
+                            <button class="button button-run" ?disabled=${this.checkRunning} @click=${this.runTests}>
+                                ${(this.checkRunning)? html`<span class="loading-icon"></span>`: nothing}Run Check</button>
                         </div>
                         `}
             `;
