@@ -1,10 +1,11 @@
-import {html, css, LitElement, nothing} from 'lit';
+import {html, css, LitElement, nothing, PropertyValues} from 'lit';
 import {customElement, property, state} from 'lit/decorators.js';
 
 import {
-    eRuleConfidence,
+    eRuleCategory,
+    eRuleConfidence, eRuleLevel,
     eRulePolicy,
-    RuleDetails
+    RuleDetails, RuleResult
 } from "accessibility-checker/lib/api/IEngine";
 // @ts-ignore
 import {runAccessibilityCheck} from "./accessibility-checker-lib.js";
@@ -19,6 +20,7 @@ import type {
 } from 'Frontend/generated/jar-resources/vaadin-dev-tools/vaadin-dev-tools';
 import {injectGlobalCss} from "./copy-styles";
 import {ThemeEditor} from "Frontend/generated/jar-resources/vaadin-dev-tools/theme-editor/editor";
+import {SelectChangeEvent} from "@vaadin/select";
 
 
 injectGlobalCss(css`
@@ -49,6 +51,7 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         top: -0.75rem;
         z-index: 1;
         display: flex;
+        gap: 0.25rem;
       }
 
       .icon {
@@ -62,7 +65,6 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         align-items: center;
         margin-right: 0.5rem;
         vertical-align: middle;
-        margin-bottom: 0.5rem;
       }
 
       .result-list {
@@ -142,8 +144,17 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         padding: 0.25rem 0.375rem;
         border-radius: 0.25rem;
         cursor: pointer;
+        display: inline-flex;
+        align-items: center;
       }
 
+      button.activated-category {
+      }
+
+      button.deactivated-category {
+        opacity: 0.6;
+        filter: grayscale(1);
+      }
       .text-field {
         background: #3C3C3C;
         border: none;
@@ -199,10 +210,14 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
       code {
         user-select: all;
       }
-      .button-run {
-        display: inline-flex;
-        align-items: center;
+      .select-filter-tagname {
         margin-left: auto;
+        background: #292929;
+        border: 0;
+        border-radius: 0.25rem;
+      }
+      .margin-right {
+        margin-right: auto;
       }
 
       .no-loading-icon {
@@ -232,10 +247,17 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
     `;
 
     @property()
-    report?: RuleDetails[];
+    filterTagName: string = "";
+    @property()
+    filterRuleCategory?: ACRuleCategory;
 
     @property()
-    detail?: RuleDetails;
+    report?: ACRuleDetails[];
+
+    filteredReport?: ACRuleDetails[];
+
+    @property()
+    detail?: ACRuleDetails;
 
     @property()
     indexDetail?: number;
@@ -252,7 +274,7 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
     private checkRunning = false;
 
     /** Ignored rule id, preferably to be configured and loaded in the init method **/
-    ignoredRules: IgnoredRule[] = [
+    ignoredRules: ACIgnoredRule[] = [
         {htmlTag: "vaadin-dev-tools"},
         {htmlTag: "vite-plugin-checker-error-overlay"},
         {htmlTag: "vaadin-connection-indicator"},
@@ -274,21 +296,28 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         // reset the scroll position
         this.scrollPosition = 0;
         const accessibilityCheckResult = await runAccessibilityCheck(document);
-        const start = new Date().getTime();
         // Remove passing issues
-        accessibilityCheckResult.results = accessibilityCheckResult.results.filter(
-            (issue: RuleDetails) => {
+        this.report = accessibilityCheckResult.results.map((ruleDetail: RuleDetails) => ({
+            ...ruleDetail,
+            tagName: this.getTagName(ruleDetail),
+            ruleCategory: this.getRuleCategory(ruleDetail.value[0],ruleDetail.value[1]),
+        })).filter(
+            (issue: ACRuleDetails) => {
                 return this.validateRuleDetails(issue);
             }
         );
-        const duration = new Date().getTime() - start;
-        if (duration > 500) {
-            console.error(`Time elapsed ${duration / 1000}s`);
-        } else {
-            console.debug(`Time elapsed ${duration / 1000}s`);
-        }
-        this.report = accessibilityCheckResult.results;
+
+        this.filterTagName = "";
+        this.filterRuleCategory = undefined;
         this.checkRunning = false;
+    }
+
+    private getTagName(ruleDetail: RuleDetails) {
+        const component = this.getComponentForNode(ruleDetail.node);
+        if (component?.element) {
+            return component?.element?.tagName;
+        }
+        return "Global issue";
     }
 
     openIde(node:Node) {
@@ -306,8 +335,8 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
     }
 
     async backToList() {
-        if (this.indexDetail && this.report) {
-            this.resetHighlight(this.report[this.indexDetail].node);
+        if (this.indexDetail && this.filteredReport) {
+            this.resetHighlight(this.filteredReport[this.indexDetail].node);
         }
         this.indexDetail = undefined;
         // wait for the update and set the scroll position
@@ -316,8 +345,8 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
     }
 
     back() {
-        if (this.indexDetail && this.report) {
-            this.resetHighlight(this.report[this.indexDetail].node);
+        if (this.indexDetail && this.filteredReport) {
+            this.resetHighlight(this.filteredReport[this.indexDetail].node);
         }
         if (this.indexDetail) {
             this.indexDetail--;
@@ -327,23 +356,23 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
             }
         }
 
-        if (this.indexDetail && this.report) {
-            this.node = this.report[this.indexDetail].node;
+        if (this.indexDetail && this.filteredReport) {
+            this.node = this.filteredReport[this.indexDetail].node;
             this.highlight(this.node);
         }
     }
     next() {
-        if (this.indexDetail !== undefined && this.report) {
-            this.resetHighlight(this.report[this.indexDetail].node);
+        if (this.indexDetail !== undefined && this.filteredReport) {
+            this.resetHighlight(this.filteredReport[this.indexDetail].node);
         }
-        if (this.indexDetail !== undefined && this.report && this.indexDetail < this.report.length - 1) {
+        if (this.indexDetail !== undefined && this.filteredReport && this.indexDetail < this.filteredReport.length - 1) {
             this.indexDetail++;
         } else {
             this.indexDetail = 0;
         }
 
-        if (this.report) {
-            this.node = this.report[this.indexDetail].node;
+        if (this.filteredReport) {
+            this.node = this.filteredReport[this.indexDetail].node;
             this.highlight(this.node);
         }
     }
@@ -369,6 +398,8 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
     activate() {
         this.checkRunning = false;
         this.report = undefined;
+        this.filterTagName = "";
+        this.filterRuleCategory = undefined;
         this.detail = undefined;
         this.indexDetail = undefined;
         this.node = null;
@@ -383,48 +414,62 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         const vaadinDevTool = (document.getElementsByTagName('vaadin-dev-tools')[0] as VaadinDevTools);
         vaadinDevTool.enableJavaLiveReload();
     }
+    willUpdate(changedProperties: PropertyValues<this>) {
+        if (changedProperties.has('filterTagName') ||changedProperties.has('filterRuleCategory') || changedProperties.has('report')) {
+            if (this.report) {
+                this.filteredReport = this.report.filter(rule =>
+                    (this.filterRuleCategory == null || rule.ruleCategory == this.filterRuleCategory)
+                    && (this.filterTagName == "" || rule.tagName.toLowerCase() == this.filterTagName)
+                );
+            }
+        }
+    }
     render() {
         if (this.indexDetail !== undefined) {
-            if (this.report) {
-                return this.renderDetail(this.report![this.indexDetail]);
+            if (this.filteredReport) {
+                return this.renderDetail(this.filteredReport![this.indexDetail]);
             } else {
                 return html``;
             }
         } else {
             return html`
-                ${this.report
+                ${(this.report && this.filteredReport)
                 ? html`<div class="container">
                             <div class="issue-summary">
                               <span>
                                 ${this.report.length} issues
                               </span>
 
-                                <span>
-                                  ${this.getIcon(eRuleIcon.VIOLATION)}
-                                  ${this.report.filter((issues: RuleDetails) => this.getRuleIcon(issues.value[0],issues.value[1]) == eRuleIcon.VIOLATION).length}
-                                  violations
-                              </span>
-                                <span>
-                                  ${this.getIcon(eRuleIcon.NEED_REVIEW)}
-                                   ${this.report.filter((issues: RuleDetails) => this.getRuleIcon(issues.value[0],issues.value[1]) == eRuleIcon.NEED_REVIEW).length}
-                                  need review
-                              </span>
-                                <span>
-                                  ${this.getIcon(eRuleIcon.RECOMMENDATION)}
-                                  ${this.report.filter((issues: RuleDetails) => this.getRuleIcon(issues.value[0],issues.value[1]) == eRuleIcon.RECOMMENDATION).length}
-                                  recommendations
-                              </span>
+                                <button class=${this.filterRuleCategoryClassName(ACRuleCategory.VIOLATION)} @click=${() => this.toggleFilterRuleCategory(ACRuleCategory.VIOLATION)}>
+                                    ${this.getIconByRuleCategory(ACRuleCategory.VIOLATION)}
+                                    ${this.report.filter((issue: ACRuleDetails) => issue.ruleCategory == ACRuleCategory.VIOLATION).length}
+                                    violations
+                                </button>
+                                <button class=${this.filterRuleCategoryClassName(ACRuleCategory.NEED_REVIEW)} @click=${() => this.toggleFilterRuleCategory(ACRuleCategory.NEED_REVIEW)}>
+                                    ${this.getIconByRuleCategory(ACRuleCategory.NEED_REVIEW)}
+                                    ${this.report.filter((issue: ACRuleDetails) => issue.ruleCategory == ACRuleCategory.NEED_REVIEW).length}
+                                    need review
+                                </button>
+                                <button class=${this.filterRuleCategoryClassName(ACRuleCategory.RECOMMENDATION)} @click=${() => this.toggleFilterRuleCategory(ACRuleCategory.RECOMMENDATION)}>
+                                    ${this.getIconByRuleCategory(ACRuleCategory.RECOMMENDATION)}
+                                    ${this.report.filter((issue: ACRuleDetails) => issue.ruleCategory == ACRuleCategory.RECOMMENDATION).length}
+                                    recommendations
+                                </button>
+                                <select .value=${this.filterTagName} @change=${this.clickHandler} class="select-filter-tagname" aria-label="Filter by tag name">
+                                    <option value="">All</option>
+                                    ${this.getReportTagNames().map((item, index) => html`<option value="${item}">${item}</option>`)}
+                                </select>
                                 <button class="button button-run" ?disabled=${this.checkRunning} @click=${this.runTests}>
                                     ${(this.checkRunning)? html`<span class="loading-icon"></span>`: nothing}
                                     Re-run Check</button>
                             </div>
                             <ul class="result-list" id="result-list">
-                                ${this.report.map((item, index) => this.renderItem(item, index))}
+                                ${this.filteredReport.map((item, index) => this.renderItem(item, index))}
                             </ul>
                         </div>
                         `
                 : html`<div class="issue-summary">
-                            Click "Run check" to start the accessibility assessment.
+                            <div class="margin-right">Click "Run check" to start the accessibility assessment.</div>
                             <button class="button button-run" ?disabled=${this.checkRunning} @click=${this.runTests}>
                                 ${(this.checkRunning)? html`<span class="loading-icon"></span>`: nothing}Run Check</button>
                         </div>
@@ -433,9 +478,19 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
 
         }
     }
+    clickHandler(e: SelectChangeEvent) {
+        this.filterTagName = e.target!.value;
+    }
+
+    getReportTagNames() {
+        if (this.report) {
+            return Array.from(new Set(this.report.map((item) => item.tagName.toLowerCase())))
+        }
+        return [];
+    }
 
 
-    renderItem(issue:RuleDetails, index:number) {
+    renderItem(issue:ACRuleDetails, index:number) {
 
         const component = this.getComponentForNode(issue.node);
         return html`<li class="result" @click="${() => {
@@ -449,9 +504,9 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         }
         }">
             <p class="text">
-                <span class="component">${component?.element?.tagName}</span>
+                <span class="component">${issue.tagName}</span>
                 <span class="warning-message">
-                    ${this.getIcon(this.getRuleIcon(issue.value[0], issue.value[1]))}  ${issue.message}
+                    ${this.getIconByRuleCategory(issue.ruleCategory)}  ${issue.message}
                 </span>
             </p>
             ${this.getDetailsIcon()}
@@ -505,7 +560,7 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         }
         return -1;
     }
-    renderDetail(issue:RuleDetails) {
+    renderDetail(issue:ACRuleDetails) {
         if (this.debugMode) {
             console.debug("Full Issue ", issue);
         }
@@ -517,8 +572,7 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
                     <button class="button" @click="${() => this.clearErrorMessage()}">Clear</button>
                 </div>` : html``}
                 <div class="result detail-header">
-                    <h2 class="component">
-                        ${component?.element?.tagName ? html`${component.element.tagName}` : html`Global issue`}</h2>
+                    <h2 class="component">${issue.tagName}</h2>
 
                     <button class="button" @click="${() => this.openIde(issue.node)}">
                         ${(component?.element) ? html`Open the component in IDE` : html`Open the route in IDE`}
@@ -541,11 +595,9 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
                 </div>
 
                 <div class="section">
-                    ${component?.element?.tagName ? html`<h3 class="small-heading lower-case">
-                        ${component.element.tagName}</h3>` : html``}
-
+                    <h3 class="small-heading lower-case">${issue.tagName}</h3>
                     <span class="warning-message">
-                        ${this.getIcon(this.getRuleIcon(issue.value[0], issue.value[1]))}
+                        ${this.getIconByRuleCategory(issue.ruleCategory)}
                         <span>
                             ${issue.message}
                         </span>
@@ -571,8 +623,7 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         `;
     }
 
-    private generateVaadinDetails(issue: RuleDetails) {
-        const component = this.getComponentForNode(issue.node);
+    private generateVaadinDetails(issue: ACRuleDetails) {
         switch (issue.ruleId) {
             case "input_label_visible":
             case "input_label_exists":
@@ -673,7 +724,7 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
                         </div>
                     </div>`;
             case "aria_widget_labelled":
-                if (component!.element!.tagName == 'VAADIN-GRID') {
+                if (issue.tagName == 'VAADIN-GRID') {
                     return html`
                         <div class="section">
                             <h3 class="small-heading">Linked issue</h3>
@@ -686,7 +737,7 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
                 return nothing;
             case "element_tabbable_visible":
             case "aria_hidden_nontabbable":
-                if (component!.element!.tagName == 'VAADIN-SIDE-NAV') {
+                if (issue.tagName == 'VAADIN-SIDE-NAV') {
                     return html`
                         <div class="section">
                             <h3 class="small-heading">Linked issue</h3>
@@ -699,38 +750,38 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         return nothing;
     }
 
-    private getRuleIcon(rulePolicy: eRulePolicy, ruleConfidence: eRuleConfidence) {
+    private getRuleCategory(rulePolicy: eRulePolicy, ruleConfidence: eRuleConfidence) {
         if (rulePolicy == eRulePolicy.VIOLATION && ruleConfidence == eRuleConfidence.FAIL) {
-            return eRuleIcon.VIOLATION;
+            return ACRuleCategory.VIOLATION;
         }
         if (rulePolicy == eRulePolicy.RECOMMENDATION) {
-            return eRuleIcon.RECOMMENDATION;
+            return ACRuleCategory.RECOMMENDATION;
         }
         if (ruleConfidence == eRuleConfidence.POTENTIAL) {
-            return eRuleIcon.NEED_REVIEW;
+            return ACRuleCategory.NEED_REVIEW;
         }
-        return eRuleIcon.RECOMMENDATION
+        return ACRuleCategory.RECOMMENDATION
 
     }
 
     /**
      * Generate an icon based on the type of the issue
-     * @param ruleLevel
+     * @param ruleCategory
      * @private
      */
-    private getIcon(rulePolicy: eRuleIcon) {
-        switch (rulePolicy) {
-            case eRuleIcon.VIOLATION:
+    private getIconByRuleCategory(ruleCategory: ACRuleCategory) {
+        switch (ruleCategory) {
+            case ACRuleCategory.VIOLATION:
                 return html`
                     <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
                         <path d="M10 0C4.5 0 0 4.5 0 10C0 15.5 4.5 20 10 20C15.5 20 20 15.5 20 10C20 4.5 15.5 0 10 0ZM15.25 13.5L13.5 15.25L10 11.75L6.5 15.25L4.75 13.5L8.25 10L4.75 6.5L6.5 4.75L10 8.25L13.5 4.75L15.25 6.5L11.75 10L15.25 13.5Z" fill="#FF3A49"/>
                     </svg>`;
-            case eRuleIcon.NEED_REVIEW:
+            case ACRuleCategory.NEED_REVIEW:
                 return html`
                     <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="20" height="18" viewBox="0 0 20 18" fill="none">
                         <path d="M10 0.25L0 17.75H20L10 0.25ZM10 15.25C9.25 15.25 8.75 14.75 8.75 14C8.75 13.25 9.25 12.75 10 12.75C10.75 12.75 11.25 13.25 11.25 14C11.25 14.75 10.75 15.25 10 15.25ZM8.75 11.5V6.5H11.25V11.5H8.75Z" fill="#FFDB7D"/>
                     </svg>`;
-            case eRuleIcon.RECOMMENDATION:
+            case ACRuleCategory.RECOMMENDATION:
                 return html`
                     <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
                         <path d="M10 0C4.5 0 0 4.5 0 10C0 15.5 4.5 20 10 20C15.5 20 20 15.5 20 10C20 4.5 15.5 0 10 0ZM11.25 16.25H8.75V7.5H11.25V16.25ZM11.25 6.25H8.75V3.75H11.25V6.25Z" fill="#57A1F8"/>
@@ -911,7 +962,7 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
      * @param issue
      * @private
      */
-    private validateRuleDetails(issue: RuleDetails) {
+    private validateRuleDetails(issue: ACRuleDetails) {
         if (issue.value[1] == "PASS") {
             return false;
         }
@@ -947,9 +998,21 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         }
         return true;
     }
+
+    private filterRuleCategoryClassName(category: ACRuleCategory) {
+        return ((this.filterRuleCategory == undefined) || (category == this.filterRuleCategory))? "button activated-category" : "button deactivated-category";
+    }
+
+    private toggleFilterRuleCategory(category: ACRuleCategory) {
+        if (category == this.filterRuleCategory) {
+            this.filterRuleCategory = undefined;
+        } else {
+            this.filterRuleCategory = category;
+        }
+    }
 }
 
-export interface IgnoredRule {
+export interface ACIgnoredRule {
     /**
      * RuleId to ignore
      */
@@ -974,9 +1037,20 @@ const plugin: DevToolsPlugin = {
     }
 };
 
-enum eRuleIcon {
+enum ACRuleCategory {
     VIOLATION = "VIOLATION",
     RECOMMENDATION = "RECOMMENDATION",
     NEED_REVIEW = "NEED_REVIEW"
 }
+
+export type ACRuleDetails = RuleDetails & {
+    tagName: string;
+    ruleCategory: ACRuleCategory;
+};
+
+
+export type ACFilter = {
+    tagName: string;
+    ruleCategory?: ACRuleCategory;
+};
 (window as any).Vaadin.devToolsPlugins.push(plugin);
