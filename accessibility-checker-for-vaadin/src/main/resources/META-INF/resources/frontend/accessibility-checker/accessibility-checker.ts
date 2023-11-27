@@ -290,26 +290,35 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         {ruleId: "aria_child_valid", htmlTag: "vaadin-side-nav"} // the children "li" are not detected for the ul inside the shadow root of the vaadin-side-nav
     ];
 
-
-    async runTests() {
+    startTests() {
         this.checkRunning = true;
         // reset the scroll position
         this.scrollPosition = 0;
-        const accessibilityCheckResult = await runAccessibilityCheck(document);
-        // Remove passing issues
-        this.report = accessibilityCheckResult.results.map((ruleDetail: RuleDetails) => ({
-            ...ruleDetail,
-            tagName: this.getTagName(ruleDetail),
-            ruleCategory: this.getRuleCategory(ruleDetail.value[0],ruleDetail.value[1]),
-        })).filter(
-            (issue: ACRuleDetails) => {
-                return this.validateRuleDetails(issue);
+        runAccessibilityCheck(document).then(
+            (accessibilityCheckResult: any) => {
+                const start = new Date().getTime()
+                // Remove passing issues
+                this.report = accessibilityCheckResult.results.filter(
+                    (issue: RuleDetails) => {
+                        return this.validateRuleDetails(issue);
+                    }
+                ).map((ruleDetail: RuleDetails) => ({
+                    ...ruleDetail,
+                    tagName: this.getTagName(ruleDetail),
+                    ruleCategory: this.getRuleCategory(ruleDetail.value[0], ruleDetail.value[1]),
+                }));
+
+                const duration = new Date().getTime() - start;
+                if (duration > 500) {
+                    console.error(`Time elapsed ${duration / 1000}s`);
+                } else {
+                    console.debug(`Time elapsed ${duration / 1000}s`);
+                }
+                this.filterTagName = "";
+                this.filterRuleCategory = undefined;
+                this.checkRunning = false;
             }
         );
-
-        this.filterTagName = "";
-        this.filterRuleCategory = undefined;
-        this.checkRunning = false;
     }
 
     private getTagName(ruleDetail: RuleDetails) {
@@ -424,6 +433,7 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
             }
         }
     }
+
     render() {
         if (this.indexDetail !== undefined) {
             if (this.filteredReport) {
@@ -459,7 +469,7 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
                                     <option value="">All</option>
                                     ${this.getReportTagNames().map((item, index) => html`<option value="${item}">${item}</option>`)}
                                 </select>
-                                <button class="button button-run" ?disabled=${this.checkRunning} @click=${this.runTests}>
+                                <button class="button button-run" ?disabled=${this.checkRunning} @click=${this.startTests}>
                                     ${(this.checkRunning)? html`<span class="loading-icon"></span>`: nothing}
                                     Re-run Check</button>
                             </div>
@@ -470,7 +480,7 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
                         `
                 : html`<div class="issue-summary">
                             <div class="margin-right">Click "Run check" to start the accessibility assessment.</div>
-                            <button class="button button-run" ?disabled=${this.checkRunning} @click=${this.runTests}>
+                            <button class="button button-run" ?disabled=${this.checkRunning} @click=${this.startTests}>
                                 ${(this.checkRunning)? html`<span class="loading-icon"></span>`: nothing}Run Check</button>
                         </div>
                         `}
@@ -962,7 +972,7 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
      * @param issue
      * @private
      */
-    private validateRuleDetails(issue: ACRuleDetails) {
+    private validateRuleDetails(issue: RuleDetails) {
         if (issue.value[1] == "PASS") {
             return false;
         }
