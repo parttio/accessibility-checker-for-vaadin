@@ -40,13 +40,10 @@ import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.HasAriaLabel;
 import com.vaadin.flow.component.HasLabel;
 import com.vaadin.flow.component.HtmlComponent;
-import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.internal.ComponentTracker;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
-import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.dom.Element;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.server.VaadinContext;
@@ -67,9 +64,11 @@ public class AccessibilityJavaSourceModifier extends Editor {
 
     private final VaadinContext context;
     private final ErrorHandler errorHandler;
-    public AccessibilityJavaSourceModifier(VaadinContext context, ErrorHandler errorHandler) {
+    private final SuccessHandler successHandler;
+    public AccessibilityJavaSourceModifier(VaadinContext context, ErrorHandler errorHandler, SuccessHandler successHandler) {
         this.context = context;
         this.errorHandler = errorHandler;
+        this.successHandler = successHandler;
     }
 
     /**
@@ -244,6 +243,7 @@ private void runAsAccess(DevToolsInterface devToolsInterface, Consumer<VaadinSes
     session.access(() -> {
         try {
             runnable.accept(session);
+            successHandler.sendSuccess(devToolsInterface);
         } catch (Exception ex) {
             getLogger().error("Error during the execution", ex);
             errorHandler.sendError(devToolsInterface, ex.getMessage());
@@ -380,5 +380,9 @@ private void runAsAccess(DevToolsInterface devToolsInterface, Consumer<VaadinSes
 
     public static interface ErrorHandler {
          void sendError(DevToolsInterface devToolsInterface, String errorMessage);
+    }
+
+    public static interface SuccessHandler {
+        void sendSuccess(DevToolsInterface devToolsInterface);
     }
 }

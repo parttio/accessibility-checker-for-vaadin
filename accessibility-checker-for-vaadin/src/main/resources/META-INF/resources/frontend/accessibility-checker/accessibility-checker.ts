@@ -39,11 +39,13 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
       .container {
         display: flex;
         flex-direction: column;
-        max-height:50vh;
+        max-height: 50vh;
       }
+
       .error-message {
         color: red;
       }
+
       .issue-summary {
         background: #3C3C3C;
         padding: 0.75rem;
@@ -81,6 +83,7 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         align-items: center;
         justify-content: space-between;
       }
+
       .section {
         border-bottom: 1px solid #3C3C3C;
         padding: 0.75rem;
@@ -88,9 +91,10 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         justify-content: space-between;
         flex-direction: column;
       }
+
       .result:hover {
         cursor: pointer;
-        background: rgba(0,0,0,0.1);
+        background: rgba(0, 0, 0, 0.1);
         transition: background 0.2s;
       }
 
@@ -112,6 +116,18 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         text-transform: lowercase;
         opacity: 0.7;
         margin-bottom: 0.5rem;
+        display: inline-flex;
+      }
+      h3.component {
+        display: inline-flex;
+      }
+
+      .component-tagname {
+        flex-grow: 1;
+      }
+
+      .component-solved {
+        color: hsl(144, 83%, 44%);
       }
 
       .warning-message {
@@ -129,9 +145,11 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
       .result .arrow {
         flex-shrink: 0;
       }
+
       button:focus-visible {
         outline: -webkit-focus-ring-color auto 1px;
       }
+
       .button {
         all: initial;
         font-family: inherit;
@@ -155,6 +173,7 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         opacity: 0.6;
         filter: grayscale(1);
       }
+
       .text-field {
         background: #3C3C3C;
         border: none;
@@ -179,7 +198,7 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
       .nav-button {
         all: initial;
         font-family: inherit;
-        font-size: calc( var(--dev-tools-font-size-small) * 1);
+        font-size: calc(var(--dev-tools-font-size-small) * 1);
         line-height: 1;
         white-space: nowrap;
         color: var(--dev-tools-text-color-active);
@@ -197,6 +216,7 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
       .lower-case {
         text-transform: lowercase;
       }
+
       .detail-actionbar {
         background: #3C3C3C;
         margin-inline: -0.75rem;
@@ -204,18 +224,22 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         display: flex;
         gap: 10px;
       }
+
       .expand {
-        flex-grow:1;
+        flex-grow: 1;
       }
+
       code {
         user-select: all;
       }
+
       .select-filter-tagname {
         margin-left: auto;
         background: #292929;
         border: 0;
         border-radius: 0.25rem;
       }
+
       .margin-right {
         margin-right: auto;
       }
@@ -226,11 +250,12 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         height: 14px;
         margin-right: 3px;
       }
+
       .loading-icon {
         display: inline-block;
         width: 14px;
         height: 14px;
-        border: 2px solid rgba(255,255,255,.3);
+        border: 2px solid rgba(255, 255, 255, .3);
         border-radius: 50%;
         border-top-color: #fff;
         animation: spin 1s ease-in-out infinite;
@@ -239,10 +264,14 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
       }
 
       @keyframes spin {
-        to { -webkit-transform: rotate(360deg); }
+        to {
+          -webkit-transform: rotate(360deg);
+        }
       }
       @-webkit-keyframes spin {
-        to { -webkit-transform: rotate(360deg); }
+        to {
+          -webkit-transform: rotate(360deg);
+        }
       }
     `;
 
@@ -306,6 +335,7 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
                     ...ruleDetail,
                     tagName: this.getTagName(ruleDetail),
                     ruleCategory: this.getRuleCategory(ruleDetail.value[0], ruleDetail.value[1]),
+                    solved: false
                 }));
 
                 const duration = new Date().getTime() - start;
@@ -344,9 +374,10 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
     }
 
     async backToList() {
-        if (this.indexDetail && this.filteredReport) {
-            this.resetHighlight(this.filteredReport[this.indexDetail].node);
+        if (this.detail  !== undefined) {
+            this.resetHighlight(this.detail.node);
         }
+        this.detail = undefined;
         this.indexDetail = undefined;
         // wait for the update and set the scroll position
         await this.updateComplete;
@@ -354,8 +385,8 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
     }
 
     back() {
-        if (this.indexDetail && this.filteredReport) {
-            this.resetHighlight(this.filteredReport[this.indexDetail].node);
+        if (this.detail) {
+            this.resetHighlight(this.detail.node);
         }
         if (this.indexDetail) {
             this.indexDetail--;
@@ -364,15 +395,14 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
                 this.indexDetail = this.report.length - 1;
             }
         }
-
-        if (this.indexDetail && this.filteredReport) {
-            this.node = this.filteredReport[this.indexDetail].node;
-            this.highlight(this.node);
+        if (this.indexDetail !== undefined && this.filteredReport) {
+            this.detail = this.filteredReport[this.indexDetail];
+            this.highlight(this.detail.node);
         }
     }
     next() {
-        if (this.indexDetail !== undefined && this.filteredReport) {
-            this.resetHighlight(this.filteredReport[this.indexDetail].node);
+        if (this.detail !== undefined && this.filteredReport) {
+            this.resetHighlight(this.detail.node);
         }
         if (this.indexDetail !== undefined && this.filteredReport && this.indexDetail < this.filteredReport.length - 1) {
             this.indexDetail++;
@@ -381,8 +411,8 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         }
 
         if (this.filteredReport) {
-            this.node = this.filteredReport[this.indexDetail].node;
-            this.highlight(this.node);
+            this.detail = this.filteredReport[this.indexDetail];
+            this.highlight(this.detail.node);
         }
     }
 
@@ -406,19 +436,16 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
 
     activate() {
         this.checkRunning = false;
-        this.report = undefined;
-        this.filterTagName = "";
-        this.filterRuleCategory = undefined;
-        this.detail = undefined;
-        this.indexDetail = undefined;
-        this.node = null;
+        if (this.detail) {
+            this.highlight(this.detail.node);
+        }
         const vaadinDevTool = (document.getElementsByTagName('vaadin-dev-tools')[0] as VaadinDevTools);
         vaadinDevTool.disableJavaLiveReload();
     }
 
     deactivate() {
-        if (this.node) {
-            this.resetHighlight(this.node);
+        if (this.detail) {
+            this.resetHighlight(this.detail.node);
         }
         const vaadinDevTool = (document.getElementsByTagName('vaadin-dev-tools')[0] as VaadinDevTools);
         vaadinDevTool.enableJavaLiveReload();
@@ -435,32 +462,31 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
     }
 
     render() {
-        if (this.indexDetail !== undefined) {
-            if (this.filteredReport) {
-                return this.renderDetail(this.filteredReport![this.indexDetail]);
-            } else {
-                return html``;
-            }
+        if (this.detail !== undefined) {
+            return this.renderDetail(this.detail);
         } else {
             return html`
                 ${(this.report && this.filteredReport)
-                ? html`<div class="container">
+                        ? html`<div class="container">
                             <div class="issue-summary">
                               <span>
                                 ${this.report.length} issues
                               </span>
 
-                                <button class=${this.filterRuleCategoryClassName(ACRuleCategory.VIOLATION)} @click=${() => this.toggleFilterRuleCategory(ACRuleCategory.VIOLATION)}>
+                                <button class=${this.filterRuleCategoryClassName(ACRuleCategory.VIOLATION)} @click=${() => this.toggleFilterRuleCategory(ACRuleCategory.VIOLATION)}
+                                        ?aria-pressed=${this.isRuleCategoryPressed(ACRuleCategory.VIOLATION)}>
                                     ${this.getIconByRuleCategory(ACRuleCategory.VIOLATION)}
                                     ${this.report.filter((issue: ACRuleDetails) => issue.ruleCategory == ACRuleCategory.VIOLATION).length}
                                     violations
                                 </button>
-                                <button class=${this.filterRuleCategoryClassName(ACRuleCategory.NEED_REVIEW)} @click=${() => this.toggleFilterRuleCategory(ACRuleCategory.NEED_REVIEW)}>
+                                <button class=${this.filterRuleCategoryClassName(ACRuleCategory.NEED_REVIEW)} @click=${() => this.toggleFilterRuleCategory(ACRuleCategory.NEED_REVIEW)}
+                                        ?aria-pressed=${this.isRuleCategoryPressed(ACRuleCategory.NEED_REVIEW)}>
                                     ${this.getIconByRuleCategory(ACRuleCategory.NEED_REVIEW)}
                                     ${this.report.filter((issue: ACRuleDetails) => issue.ruleCategory == ACRuleCategory.NEED_REVIEW).length}
                                     need review
                                 </button>
-                                <button class=${this.filterRuleCategoryClassName(ACRuleCategory.RECOMMENDATION)} @click=${() => this.toggleFilterRuleCategory(ACRuleCategory.RECOMMENDATION)}>
+                                <button class=${this.filterRuleCategoryClassName(ACRuleCategory.RECOMMENDATION)} @click=${() => this.toggleFilterRuleCategory(ACRuleCategory.RECOMMENDATION)}
+                                        ?aria-pressed=${this.isRuleCategoryPressed(ACRuleCategory.RECOMMENDATION)}>
                                     ${this.getIconByRuleCategory(ACRuleCategory.RECOMMENDATION)}
                                     ${this.report.filter((issue: ACRuleDetails) => issue.ruleCategory == ACRuleCategory.RECOMMENDATION).length}
                                     recommendations
@@ -478,7 +504,7 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
                             </ul>
                         </div>
                         `
-                : html`<div class="issue-summary">
+                        : html`<div class="issue-summary">
                             <div class="margin-right">Click "Run check" to start the accessibility assessment.</div>
                             <button class="button button-run" ?disabled=${this.checkRunning} @click=${this.startTests}>
                                 ${(this.checkRunning)? html`<span class="loading-icon"></span>`: nothing}Run Check</button>
@@ -507,14 +533,17 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
             // save the scroll position
             this.scrollPosition = (this.renderRoot.querySelector("#result-list") as HTMLElement).scrollTop;
             this.indexDetail = index;
-            if (this.report) {
-                this.node = this.report[this.indexDetail].node;
-                this.highlight(this.node);
+            if (this.filteredReport) {
+                this.detail = this.filteredReport[this.indexDetail];
+                this.highlight(this.detail.node);
             }
         }
         }">
             <p class="text">
-                <span class="component">${issue.tagName}</span>
+                <span class="component">
+                    <span class="component-tagname">${issue.tagName} </span>
+                    ${issue.solved?  html`<span class="component-solved">Solved</span>`: nothing}
+                </span>
                 <span class="warning-message">
                     ${this.getIconByRuleCategory(issue.ruleCategory)}  ${issue.message}
                 </span>
@@ -605,7 +634,10 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
                 </div>
 
                 <div class="section">
-                    <h3 class="small-heading lower-case">${issue.tagName}</h3>
+                    <h3 class="component small-heading lower-case">
+                        <span class="component-tagname">${issue.tagName} </span>
+                        ${issue.solved?  html`<span class="component-solved">Solved</span>`: nothing}
+                    </h3>
                     <span class="warning-message">
                         ${this.getIconByRuleCategory(issue.ruleCategory)}
                         <span>
@@ -615,7 +647,7 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
                 </div>
 
                 ${(this.generateVaadinDetails(issue))
-        }
+                }
 
                 <div class="section">
                     <h3 class="small-heading">Help <a
@@ -960,6 +992,14 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
             this.errorMessage = message.data.message;
             return true; // Mark the message as handled
         }
+
+        if (message.command === `${AccessibilityChecker.NAME}-success`) {
+            if (this.detail  !== undefined) {
+                this.detail.solved = true; // update the object for the list
+                this.detail = {...this.detail, solved: true}; // update the instance to refresh the detail view
+            }
+            return true; // Mark the message as handled
+        }
         return false; // The message was not handled
     }
 
@@ -1009,6 +1049,9 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         return true;
     }
 
+    private isRuleCategoryPressed(category: ACRuleCategory) {
+        return ((this.filterRuleCategory != undefined) && (category == this.filterRuleCategory));
+    }
     private filterRuleCategoryClassName(category: ACRuleCategory) {
         return ((this.filterRuleCategory == undefined) || (category == this.filterRuleCategory))? "button activated-category" : "button deactivated-category";
     }
@@ -1056,11 +1099,7 @@ enum ACRuleCategory {
 export type ACRuleDetails = RuleDetails & {
     tagName: string;
     ruleCategory: ACRuleCategory;
+    solved: boolean;
 };
 
-
-export type ACFilter = {
-    tagName: string;
-    ruleCategory?: ACRuleCategory;
-};
 (window as any).Vaadin.devToolsPlugins.push(plugin);

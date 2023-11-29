@@ -1,6 +1,5 @@
 package org.vaadin.addons.accessibility;
 
-import com.vaadin.base.devserver.editor.Editor;
 import org.apache.commons.io.IOUtils;
 import org.junit.Assert;
 import org.junit.Before;
@@ -16,7 +15,7 @@ public abstract class AbstractClassBasedTest {
 
     @Before
     public void setup() throws Exception {
-        editor = new AccessibilityJavaSourceModifier(null, null);
+        editor = new AccessibilityJavaSourceModifier(null, null, null);
         testFile = File.createTempFile("test", ".java");
     }
 
