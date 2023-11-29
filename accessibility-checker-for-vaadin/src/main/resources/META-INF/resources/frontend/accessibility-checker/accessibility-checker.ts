@@ -39,11 +39,13 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
       .container {
         display: flex;
         flex-direction: column;
-        max-height:50vh;
+        max-height: 50vh;
       }
+
       .error-message {
         color: red;
       }
+
       .issue-summary {
         background: #3C3C3C;
         padding: 0.75rem;
@@ -81,6 +83,7 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         align-items: center;
         justify-content: space-between;
       }
+
       .section {
         border-bottom: 1px solid #3C3C3C;
         padding: 0.75rem;
@@ -88,9 +91,10 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         justify-content: space-between;
         flex-direction: column;
       }
+
       .result:hover {
         cursor: pointer;
-        background: rgba(0,0,0,0.1);
+        background: rgba(0, 0, 0, 0.1);
         transition: background 0.2s;
       }
 
@@ -112,6 +116,18 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         text-transform: lowercase;
         opacity: 0.7;
         margin-bottom: 0.5rem;
+        display: inline-flex;
+      }
+      h3.component {
+        display: inline-flex;
+      }
+
+      .component-tagname {
+        flex-grow: 1;
+      }
+
+      .component-solved {
+        color: hsl(144, 83%, 44%);
       }
 
       .warning-message {
@@ -129,9 +145,11 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
       .result .arrow {
         flex-shrink: 0;
       }
+
       button:focus-visible {
         outline: -webkit-focus-ring-color auto 1px;
       }
+
       .button {
         all: initial;
         font-family: inherit;
@@ -155,6 +173,7 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         opacity: 0.6;
         filter: grayscale(1);
       }
+
       .text-field {
         background: #3C3C3C;
         border: none;
@@ -179,7 +198,7 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
       .nav-button {
         all: initial;
         font-family: inherit;
-        font-size: calc( var(--dev-tools-font-size-small) * 1);
+        font-size: calc(var(--dev-tools-font-size-small) * 1);
         line-height: 1;
         white-space: nowrap;
         color: var(--dev-tools-text-color-active);
@@ -197,6 +216,7 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
       .lower-case {
         text-transform: lowercase;
       }
+
       .detail-actionbar {
         background: #3C3C3C;
         margin-inline: -0.75rem;
@@ -204,18 +224,22 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         display: flex;
         gap: 10px;
       }
+
       .expand {
-        flex-grow:1;
+        flex-grow: 1;
       }
+
       code {
         user-select: all;
       }
+
       .select-filter-tagname {
         margin-left: auto;
         background: #292929;
         border: 0;
         border-radius: 0.25rem;
       }
+
       .margin-right {
         margin-right: auto;
       }
@@ -226,11 +250,12 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         height: 14px;
         margin-right: 3px;
       }
+
       .loading-icon {
         display: inline-block;
         width: 14px;
         height: 14px;
-        border: 2px solid rgba(255,255,255,.3);
+        border: 2px solid rgba(255, 255, 255, .3);
         border-radius: 50%;
         border-top-color: #fff;
         animation: spin 1s ease-in-out infinite;
@@ -239,10 +264,14 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
       }
 
       @keyframes spin {
-        to { -webkit-transform: rotate(360deg); }
+        to {
+          -webkit-transform: rotate(360deg);
+        }
       }
       @-webkit-keyframes spin {
-        to { -webkit-transform: rotate(360deg); }
+        to {
+          -webkit-transform: rotate(360deg);
+        }
       }
     `;
 
@@ -407,11 +436,9 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
 
     activate() {
         this.checkRunning = false;
-        this.report = undefined;
-        this.filterTagName = "";
-        this.filterRuleCategory = undefined;
-        this.indexDetail = undefined;
-        this.detail = undefined;
+        if (this.detail) {
+            this.highlight(this.detail.node);
+        }
         const vaadinDevTool = (document.getElementsByTagName('vaadin-dev-tools')[0] as VaadinDevTools);
         vaadinDevTool.disableJavaLiveReload();
     }
@@ -440,13 +467,13 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         } else {
             return html`
                 ${(this.report && this.filteredReport)
-                ? html`<div class="container">
+                        ? html`<div class="container">
                             <div class="issue-summary">
                               <span>
                                 ${this.report.length} issues
                               </span>
 
-                                <button class=${this.filterRuleCategoryClassName(ACRuleCategory.VIOLATION)} @click=${() => this.toggleFilterRuleCategory(ACRuleCategory.VIOLATION)} 
+                                <button class=${this.filterRuleCategoryClassName(ACRuleCategory.VIOLATION)} @click=${() => this.toggleFilterRuleCategory(ACRuleCategory.VIOLATION)}
                                         ?aria-pressed=${this.isRuleCategoryPressed(ACRuleCategory.VIOLATION)}>
                                     ${this.getIconByRuleCategory(ACRuleCategory.VIOLATION)}
                                     ${this.report.filter((issue: ACRuleDetails) => issue.ruleCategory == ACRuleCategory.VIOLATION).length}
@@ -477,7 +504,7 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
                             </ul>
                         </div>
                         `
-                : html`<div class="issue-summary">
+                        : html`<div class="issue-summary">
                             <div class="margin-right">Click "Run check" to start the accessibility assessment.</div>
                             <button class="button button-run" ?disabled=${this.checkRunning} @click=${this.startTests}>
                                 ${(this.checkRunning)? html`<span class="loading-icon"></span>`: nothing}Run Check</button>
@@ -513,7 +540,10 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         }
         }">
             <p class="text">
-                <span class="component">${issue.tagName} ${issue.solved?  html`SOLVED`: nothing}</span>
+                <span class="component">
+                    <span class="component-tagname">${issue.tagName} </span>
+                    ${issue.solved?  html`<span class="component-solved">Solved</span>`: nothing}
+                </span>
                 <span class="warning-message">
                     ${this.getIconByRuleCategory(issue.ruleCategory)}  ${issue.message}
                 </span>
@@ -604,7 +634,10 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
                 </div>
 
                 <div class="section">
-                    <h3 class="small-heading lower-case">${issue.tagName} ${issue.solved?  html`SOLVED`: nothing}</h3>
+                    <h3 class="component small-heading lower-case">
+                        <span class="component-tagname">${issue.tagName} </span>
+                        ${issue.solved?  html`<span class="component-solved">Solved</span>`: nothing}
+                    </h3>
                     <span class="warning-message">
                         ${this.getIconByRuleCategory(issue.ruleCategory)}
                         <span>
@@ -614,7 +647,7 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
                 </div>
 
                 ${(this.generateVaadinDetails(issue))
-        }
+                }
 
                 <div class="section">
                     <h3 class="small-heading">Help <a
@@ -1069,9 +1102,4 @@ export type ACRuleDetails = RuleDetails & {
     solved: boolean;
 };
 
-
-export type ACFilter = {
-    tagName: string;
-    ruleCategory?: ACRuleCategory;
-};
 (window as any).Vaadin.devToolsPlugins.push(plugin);
