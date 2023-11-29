@@ -784,7 +784,7 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
                         <div class="section">
                             <h3 class="small-heading">Linked issue</h3>
                             <div>
-                                See this <a href="https://github.com/vaadin/web-components/issues/6708" target="_blank">ticket</a>
+                                See this <a href="https://github.com/vaadin/web-components/issues/6708" target="_blank">ticket</a>. You can update your Vaadin version to 24.2.5+ to fix the issue.
                             </div>
                         </div>`;
                 }
