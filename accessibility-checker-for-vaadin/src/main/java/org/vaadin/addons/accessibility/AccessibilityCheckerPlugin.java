@@ -141,11 +141,18 @@ public class AccessibilityCheckerPlugin implements DevToolsMessageHandler {
 
     private AccessibilityJavaSourceModifier getAccessibilityJavaSourceModifier() {
         if (accessibilityJavaSourceModifier == null) {
-            this.accessibilityJavaSourceModifier = new AccessibilityJavaSourceModifier(VaadinService.getCurrent().getContext(), (devToolsInterface, errorMessage) -> {
-                JsonObject object = Json.createObject();
-                object.put("message", errorMessage);
-                devToolsInterface.send(ACCESSIBILITY_CHECKER + "-error", object);
-            });
+            this.accessibilityJavaSourceModifier = new AccessibilityJavaSourceModifier(
+                    VaadinService.getCurrent().getContext(),
+                    (devToolsInterface, errorMessage) -> {
+                        JsonObject object = Json.createObject();
+                        object.put("message", errorMessage);
+                        devToolsInterface.send(ACCESSIBILITY_CHECKER + "-error", object);
+                    },
+                    (devToolsInterface) -> {
+                        JsonObject object = Json.createObject();
+                        devToolsInterface.send(ACCESSIBILITY_CHECKER + "-success", object);
+                    }
+            );
         }
         return accessibilityJavaSourceModifier;
     }
