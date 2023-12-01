@@ -42,8 +42,8 @@ import java.util.Optional;
 /**
  * @author jcgueriaud
  */
-@NpmPackage(value = "accessibility-checker", version = "3.1.49")
-@NpmPackage(value = "accessibility-checker-engine", version = "3.1.49")
+@NpmPackage(value = "accessibility-checker", version = "3.1.64")
+@NpmPackage(value = "accessibility-checker-engine", version = "3.1.64")
 @JsModule(value = "./accessibility-checker/accessibility-checker.ts", developmentOnly = true)
 public class AccessibilityCheckerPlugin implements DevToolsMessageHandler {
 

@@ -1,7 +1,7 @@
 import {html, css, LitElement, nothing, PropertyValues} from 'lit';
 import {customElement, property, state} from 'lit/decorators.js';
 
-import {RuleDetails} from "accessibility-checker/lib/api/IEngine";
+import {IEngineResult} from "accessibility-checker/lib/common/engine/IReport";
 // @ts-ignore
 import {runAccessibilityCheck} from "./accessibility-checker-lib.js";
 import {ComponentReference} from "./copy-component-util";
@@ -89,10 +89,10 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
                 const start = new Date().getTime()
                 // Remove passing issues
                 this.report = accessibilityCheckResult.results.filter(
-                    (issue: RuleDetails) => {
+                    (issue: IEngineResult) => {
                         return this.validateRuleDetails(issue);
                     }
-                ).map((ruleDetail: RuleDetails) => ({
+                ).map((ruleDetail: IEngineResult) => ({
                     ...ruleDetail,
                     tagName: getTagName(ruleDetail),
                     ruleCategory: getRuleCategory(ruleDetail.value[0], ruleDetail.value[1]),
@@ -631,7 +631,7 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
      * @param issue
      * @private
      */
-    private validateRuleDetails(issue: RuleDetails) {
+    private validateRuleDetails(issue: IEngineResult) {
         if (issue.value[1] == "PASS") {
             return false;
         }
