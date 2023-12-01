@@ -7,6 +7,12 @@
  * @param node
  */
 import {ComponentReference, getComponents} from "./copy-component-util";
+import {ACRuleCategory} from "./accessibility-checker-types";
+
+import {
+    eRuleConfidence,
+    eRulePolicy, RuleDetails
+} from "accessibility-checker/lib/api/IEngine";
 
 export function getComponentForNode(node: Node): ComponentReference | undefined {
     const elementForNode = getElementForNode(node);
@@ -46,4 +52,45 @@ export function  getUiId() {
         }
     }
     return -1;
+}
+
+export function getRuleCategory(rulePolicy: eRulePolicy, ruleConfidence: eRuleConfidence) {
+    if (rulePolicy == eRulePolicy.VIOLATION && ruleConfidence == eRuleConfidence.FAIL) {
+        return ACRuleCategory.VIOLATION;
+    }
+    if (rulePolicy == eRulePolicy.RECOMMENDATION) {
+        return ACRuleCategory.RECOMMENDATION;
+    }
+    if (ruleConfidence == eRuleConfidence.POTENTIAL) {
+        return ACRuleCategory.NEED_REVIEW;
+    }
+    return ACRuleCategory.RECOMMENDATION
+
+}
+
+
+export function getTagName(ruleDetail: RuleDetails) {
+    const component = getComponentForNode(ruleDetail.node);
+    if (component?.element) {
+        return component?.element?.tagName;
+    }
+    return "Global issue";
+}
+
+export function highlight(node:Node | null) {
+    if (node) {
+        const elementForNode = getElementForNode(node);
+        if (elementForNode) {
+            elementForNode.classList.add('vaadin-accessibility-checker-highlight');
+        }
+    }
+}
+
+export function resetHighlight(node:Node | null) {
+    if (node) {
+        const elementForNode = getElementForNode(node);
+        if (elementForNode) {
+            elementForNode.classList.remove('vaadin-accessibility-checker-highlight');
+        }
+    }
 }
