@@ -1,5 +1,5 @@
 
-import { RuleDetails } from "accessibility-checker/lib/api/IEngine";
+import {IEngineResult} from "accessibility-checker/lib/common/engine/IReport";
 
 export enum ACRuleCategory {
     VIOLATION = "VIOLATION",
@@ -7,7 +7,7 @@ export enum ACRuleCategory {
     NEED_REVIEW = "NEED_REVIEW"
 }
 
-export type ACRuleDetails = RuleDetails & {
+export type ACRuleDetails = IEngineResult & {
     tagName: string;
     ruleCategory: ACRuleCategory;
     solved: boolean;
