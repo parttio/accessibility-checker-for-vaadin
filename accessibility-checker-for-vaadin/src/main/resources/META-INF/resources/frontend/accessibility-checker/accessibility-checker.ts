@@ -81,7 +81,12 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         {ruleId: "label_content_exists", htmlTag: "vaadin-select"}, // https://github.com/vaadin/web-components/issues/6912
         {ruleId: "aria_keyboard_handler_exists", htmlTag: "vaadin-combo-box"},
         {ruleId: "aria_keyboard_handler_exists", htmlTag: "vaadin-date-picker"},
-        {ruleId: "aria_keyboard_handler_exists", htmlTag: "vaadin-tabs"}
+        {ruleId: "aria_keyboard_handler_exists", htmlTag: "vaadin-tabs"},
+        {ruleId: "aria_keyboard_handler_exists", htmlTag: "vaadin-grid"},
+        {ruleId: "element_tabbable_role_valid", htmlTag: "vaadin-grid"},
+        {ruleId: "aria_keyboard_handler_exists", htmlTag: "vaadin-grid"},
+        {ruleId: "aria_child_valid", htmlTag: "vaadin-grid"},
+        {ruleId: "aria_attribute_redundant", htmlTag: "vaadin-text-field"}, // disable the error with aria-disabled + disabled
     ];
 
     startTests() {
