@@ -11,8 +11,8 @@ import {ACRuleCategory} from "./accessibility-checker-types";
 
 import {
     eRuleConfidence,
-    eRulePolicy, RuleDetails
-} from "accessibility-checker/lib/api/IEngine";
+    eRulePolicy, IEngineResult
+} from "accessibility-checker/lib/common/engine/IReport";
 
 export function getComponentForNode(node: Node): ComponentReference | undefined {
     const elementForNode = getElementForNode(node);
@@ -69,7 +69,7 @@ export function getRuleCategory(rulePolicy: eRulePolicy, ruleConfidence: eRuleCo
 }
 
 
-export function getTagName(ruleDetail: RuleDetails) {
+export function getTagName(ruleDetail: IEngineResult) {
     const component = getComponentForNode(ruleDetail.node);
     if (component?.element) {
         return component?.element?.tagName;
