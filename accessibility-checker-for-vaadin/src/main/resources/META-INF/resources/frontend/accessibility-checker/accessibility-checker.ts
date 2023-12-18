@@ -76,6 +76,7 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         {ruleId: "table_aria_descendants", htmlTag: "vaadin-grid"}, // maybe the filter could be different
         //  {ruleId: "input_label_before", htmlTag: "vaadin-text-field"}, that's a false positive, the label is before the input
         {ruleId: "input_label_before"}, // that's a false positive, the label is before the input. Maybe we can filter only for vaadin components
+        {ruleId: "input_label_after", htmlTag: "vaadin-checkbox"}, // that's a false positive only for the vaadin-checkbox
         {ruleId: "list_structure_proper", htmlTag: "vaadin-side-nav"},
         {ruleId: "aria_child_valid", htmlTag: "vaadin-side-nav"}, // the children "li" are not detected for the ul inside the shadow root of the vaadin-side-nav
         {ruleId: "label_content_exists", htmlTag: "vaadin-select"}, // https://github.com/vaadin/web-components/issues/6912
@@ -86,7 +87,9 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
         {ruleId: "element_tabbable_role_valid", htmlTag: "vaadin-grid"},
         {ruleId: "aria_keyboard_handler_exists", htmlTag: "vaadin-grid"},
         {ruleId: "aria_child_valid", htmlTag: "vaadin-grid"},
+        {ruleId: "img_alt_background", htmlTag: "vaadin-grid"}, // disable the error when vaadin-grid is row-stripe
         {ruleId: "aria_attribute_redundant", htmlTag: "vaadin-text-field"}, // disable the error with aria-disabled + disabled
+        {ruleId: "aria_attribute_redundant", htmlTag: "vaadin-combo-box"}, // disable the error with aria-disabled + disabled
     ];
 
     startTests() {
