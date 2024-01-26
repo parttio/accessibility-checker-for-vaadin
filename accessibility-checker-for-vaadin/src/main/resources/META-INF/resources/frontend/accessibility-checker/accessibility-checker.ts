@@ -187,7 +187,7 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
             highlight(this.detail.node);
         }
         const vaadinDevTool = (document.getElementsByTagName('vaadin-dev-tools')[0] as VaadinDevTools);
-        vaadinDevTool.disableJavaLiveReload();
+        vaadinDevTool.setJavaLiveReloadActive(false);
     }
 
     deactivate() {
@@ -195,7 +195,7 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
             resetHighlight(this.detail.node);
         }
         const vaadinDevTool = (document.getElementsByTagName('vaadin-dev-tools')[0] as VaadinDevTools);
-        vaadinDevTool.enableJavaLiveReload();
+        vaadinDevTool.setJavaLiveReloadActive(true);
     }
     willUpdate(changedProperties: PropertyValues<this>) {
         if (changedProperties.has('filterTagName') ||changedProperties.has('filterRuleCategory') || changedProperties.has('report')) {
