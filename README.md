@@ -41,6 +41,8 @@ For the typescript changes, the folder in the addon library is already listened.
 
 ## Publishing to Vaadin Directory / Maven Central
 
+You need to be authenticated with GitHub from Git using HTTPS, see the [official documentation](https://docs.github.com/en/get-started/getting-started-with-git/set-up-git#connecting-over-https-recommended)
+
 Push all your changes in the main branch, then run in the `accessibility-checker-for-vaadin` folder (the addon folder):
 
     mvn release:prepare release:clean
