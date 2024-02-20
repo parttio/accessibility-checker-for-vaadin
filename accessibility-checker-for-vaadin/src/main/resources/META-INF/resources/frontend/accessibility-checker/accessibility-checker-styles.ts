@@ -2,6 +2,9 @@ import {css, CSSResult} from 'lit';
 
 
 export const getStyles = css`
+    :host {
+        padding: 0 !important;
+    }
 .container {
     display: flex;
     flex-direction: column;
@@ -13,7 +16,6 @@ export const getStyles = css`
 }
 
 .issue-summary {
-    background: #3C3C3C;
     padding: 0.75rem;
     position: sticky;
     top: -0.75rem;

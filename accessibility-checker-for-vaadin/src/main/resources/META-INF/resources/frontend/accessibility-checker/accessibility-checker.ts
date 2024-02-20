@@ -1,11 +1,13 @@
-import {html, css, LitElement, nothing, PropertyValues} from 'lit';
+import {css, html, LitElement, nothing, PropertyValues} from 'lit';
 import {customElement, property, state} from 'lit/decorators.js';
 
 import {IEngineResult} from "accessibility-checker/lib/common/engine/IReport";
 // @ts-ignore
 import {runAccessibilityCheck} from "./accessibility-checker-lib.js";
-import {ComponentReference} from "./copy-component-util";
 
+import type {
+    ComponentReference
+} from 'Frontend/generated/jar-resources/vaadin-dev-tools/component-util.d.ts';
 import type {
     DevToolsInterface,
     DevToolsPlugin,
@@ -13,14 +15,39 @@ import type {
     ServerMessage,
     VaadinDevTools
 } from 'Frontend/generated/jar-resources/vaadin-dev-tools/vaadin-dev-tools';
+import {
+    CopilotInterface,
+    CopilotPlugin,
+    Framework,
+    PanelConfiguration
+} from "./copilot/copilot-plugin-support.js";
 import {injectGlobalCss} from "./copy-styles";
-import {ThemeEditor} from "Frontend/generated/jar-resources/vaadin-dev-tools/theme-editor/editor";
+import {
+    ThemeEditor
+} from "Frontend/generated/jar-resources/vaadin-dev-tools/theme-editor/editor";
 import {SelectChangeEvent} from "@vaadin/select";
 import {getStyles} from "./accessibility-checker-styles";
-import {ACIgnoredRule, ACRuleCategory, ACRuleDetails} from "./accessibility-checker-types";
-import {getIconByRuleCategory, getBackIcon, getBackToListIcon, getNextIcon, getDetailsIcon} from "./accessibility-checker-icons";
-import {getComponentForNode, getElementForNode, getUiId, getRuleCategory, getTagName, highlight, resetHighlight} from "./accessibility-checker-utils";
-
+import {
+    ACIgnoredRule,
+    ACRuleCategory,
+    ACRuleDetails
+} from "./accessibility-checker-types";
+import {
+    getBackIcon,
+    getBackToListIcon,
+    getDetailsIcon,
+    getIconByRuleCategory,
+    getNextIcon
+} from "./accessibility-checker-icons";
+import {
+    getComponentForNode,
+    getElementForNode,
+    getRuleCategory,
+    getTagName,
+    getUiId,
+    highlight,
+    resetHighlight
+} from "./accessibility-checker-utils";
 
 injectGlobalCss(css`
   .vaadin-accessibility-checker-highlight {
@@ -65,6 +92,8 @@ export class AccessibilityChecker extends LitElement implements MessageHandler {
 
     /** Ignored rule id, preferably to be configured and loaded in the init method **/
     ignoredRules: ACIgnoredRule[] = [
+        {htmlTag: "copilot-main"},
+        {htmlTag: "output"},
         {htmlTag: "vaadin-dev-tools"},
         {htmlTag: "vite-plugin-checker-error-overlay"},
         {htmlTag: "vaadin-connection-indicator"},
@@ -706,3 +735,24 @@ const plugin: DevToolsPlugin = {
 
 
 (window as any).Vaadin.devToolsPlugins.push(plugin);
+
+
+const panelConfig: PanelConfiguration = {
+    header: 'Accessibility Checker',
+    expanded: true,
+    draggable: true,
+    panelOrder: 0,
+    panel: 'right',
+    floating: false,
+    tag: AccessibilityChecker.NAME,
+    showOn: [Framework.Flow, Framework.HillaLit, Framework.HillaReact],
+};
+
+const copilotPlugin: CopilotPlugin = {
+    init(copilotInterface: CopilotInterface): void {
+        copilotInterface.addPanel(panelConfig);
+    },
+};
+if ((window as any).Vaadin.copilot !== undefined) {
+    (window as any).Vaadin.copilot.plugins.push(copilotPlugin);
+}

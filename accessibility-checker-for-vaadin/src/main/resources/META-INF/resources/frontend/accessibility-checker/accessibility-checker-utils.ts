@@ -78,19 +78,31 @@ export function getTagName(ruleDetail: IEngineResult) {
 }
 
 export function highlight(node:Node | null) {
-    if (node) {
-        const elementForNode = getElementForNode(node);
-        if (elementForNode) {
-            elementForNode.classList.add('vaadin-accessibility-checker-highlight');
+    if ((window.Vaadin as any).copilot == undefined) {
+        if (node) {
+            const elementForNode = getElementForNode(node);
+            if (elementForNode) {
+                elementForNode.classList.add('vaadin-accessibility-checker-highlight');
+            }
+        }
+    } else {
+        if (node) {
+            const elementForNode = getElementForNode(node);
+            if (elementForNode) {
+                (window.Vaadin as any).copilot.eventbus.emit("select-element", {element:elementForNode});
+            }
         }
     }
+
 }
 
 export function resetHighlight(node:Node | null) {
-    if (node) {
-        const elementForNode = getElementForNode(node);
-        if (elementForNode) {
-            elementForNode.classList.remove('vaadin-accessibility-checker-highlight');
+    if ((window.Vaadin as any).copilot == undefined) {
+        if (node) {
+            const elementForNode = getElementForNode(node);
+            if (elementForNode) {
+                elementForNode.classList.remove('vaadin-accessibility-checker-highlight');
+            }
         }
     }
 }

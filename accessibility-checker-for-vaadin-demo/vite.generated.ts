@@ -11,6 +11,7 @@ import * as net from 'net';
 
 import { processThemeResources } from './target/plugins/application-theme-plugin/theme-handle.js';
 import { rewriteCssUrls } from './target/plugins/theme-loader/theme-loader-utils.js';
+import { addFunctionComponentSourceLocationBabel } from './target/plugins/react-function-location-plugin/react-function-location-plugin.js';
 import settings from './target/vaadin-dev-server-settings.json';
 import {
   AssetInfo,
@@ -33,6 +34,7 @@ import postcssLit from './target/plugins/rollup-plugin-postcss-lit-custom/rollup
 import { createRequire } from 'module';
 
 import { visualizer } from 'rollup-plugin-visualizer';
+import reactPlugin from '@vitejs/plugin-react';
 
 // Make `require` compatible with ES modules
 const require = createRequire(import.meta.url);
@@ -644,8 +646,6 @@ function runWatchDog(watchDogPort, watchDogHost) {
   client.connect(watchDogPort, watchDogHost || 'localhost');
 }
 
-let spaMiddlewareForceRemoved = false;
-
 const allowedFrontendFolders = [frontendFolder, nodeModulesFolder];
 
 function showRecompileReason(): PluginOption {
@@ -771,20 +771,27 @@ export const vaadinConfig: UserConfigFn = (env) => {
           new RegExp('.*/.*\\?html-proxy.*')
         ]
       }),
+      // The React plugin provides fast refresh and debug source info
+      devMode && reactPlugin({
+        include: '**/*.tsx',
+        babel: {
+          // We need to use babel to provide the source information for it to be correct
+          // (otherwise Babel will slightly rewrite the source file and esbuild generate source info for the modified file)
+          presets: [['@babel/preset-react', { runtime: 'automatic', development: devMode }]],
+          // React writes the source location for where components are used, this writes for where they are defined
+          plugins: [addFunctionComponentSourceLocationBabel()]
+        }
+      }),
       {
         name: 'vaadin:force-remove-html-middleware',
-        transformIndexHtml: {
-          order: 'pre',
-          handler(_html, { server }) {
-            if (server && !spaMiddlewareForceRemoved) {
-              server.middlewares.stack = server.middlewares.stack.filter((mw) => {
-                const handleName = '' + mw.handle;
-                return !handleName.includes('viteHtmlFallbackMiddleware');
-              });
-              spaMiddlewareForceRemoved = true;
-            }
-          }
-        }
+        configureServer(server) {
+          return () => {
+            server.middlewares.stack = server.middlewares.stack.filter((mw) => {
+              const handleName = `${mw.handle}`;
+              return !handleName.includes('viteHtmlFallbackMiddleware');
+            });
+          };
+        },
       },
       hasExportedWebComponents && {
         name: 'vaadin:inject-entrypoints-to-web-component-html',

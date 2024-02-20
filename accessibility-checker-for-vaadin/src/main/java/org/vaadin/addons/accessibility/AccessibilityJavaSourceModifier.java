@@ -360,7 +360,7 @@ private void runAsAccess(DevToolsInterface devToolsInterface, Consumer<VaadinSes
                         || expr.getExpression().isVariableDeclarationExpr())) {
             return Where.AFTER;
         }
-        throw new AccessibilityCheckerException("Cannot apply classname for " + node);
+        throw new AccessibilityCheckerException("Cannot apply the modification for " + node);
     }
 
     protected Node findNode(CompilationUnit cu, Component component) {
