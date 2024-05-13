@@ -1,4 +1,8 @@
-# 
+# DEPRECATED
+
+
+The addon has been integrated in Copilot in Vaadin 24.4. There won't be any updates here.
+Feel free to open tickets here: https://github.com/vaadin/copilot
 
 ## Development instructions
 Run
